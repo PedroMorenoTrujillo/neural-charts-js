@@ -26,6 +26,12 @@ if (result.status === 'ok') {
 
 Typed custom content for titles, tooltips, legends, axis labels and data labels uses a separate capability port. Angular adds typed projected templates. Accessibility, SSR and exports share the portable text representation.
 
-To build the source for the published 1.0.0 release, use Node.js 22.22.3 or newer. Run `npm ci` and `npm run build`.
+## Zoom toolbar
+
+Configure the axes in `viewport.axes` and add `ChartToolbarAction.Zoom` to `toolbar.actions` to show the zoom controls with the download buttons. The three controls zoom in, zoom out and reset. With the slider hidden by default, the buttons and the + and − keys use 1× steps up to 20×, within the chart’s available range.
+
+Set `viewport.zoom.position` to `ChartZoomPosition.Below` for a separate row below the chart. Set `viewport.zoom.showSlider` to `true` to show the slider, then use `min`, `max`, `step`, `increment` and `label` to customize it. Import the enums from `@neural-charts/web`.
+
+To build the source, use Node.js 22.22.3 or newer. Run `npm ci` and `npm run build`.
 
 Licensed under [MIT](./LICENSE).

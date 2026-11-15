@@ -1,6 +1,6 @@
 import { transformPlanViewport, preparePlanRegionHit } from '@neural-charts/core';
 import type { PlanFrame, PlanObservation, PlanViewportIntent, PlanViewportState, PlanViewportValue } from '@neural-charts/core';
-import { ChartDownloadFormat, ChartDownloadMenuPosition, ChartToolbarAction } from './types.js';
+import { ChartDownloadFormat, ChartDownloadMenuPosition, ChartToolbarAction, ChartZoomPosition } from './types.js';
 import type { ChartController, ChartData, ChartOptions, ChartMountOptions, ChartPointId, ChartResult } from './types.js';
 import { invalid, planWith, snapshot, validateOptions, type ChartPlanner } from './planning.js';
 import { chartSvg, hasSideLegend, plotBounds, plotSize, pathData, svgNamespace, parallelPlotWidth } from './svg.js';
@@ -133,6 +133,7 @@ export function createChartWithPlanner(planner: ChartPlanner, host: HTMLElement,
   plotRegion.append(drawing, scrollbar);
   let scroll: ReturnType<typeof horizontalViewportScroll>, scrollFrame = 0;
   let downloadToolbar: HTMLDivElement | undefined;
+  let zoomGroup: HTMLDivElement | undefined;
   const zoomLabel = element('label', 'display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 8px;min-width:0;flex:1 1 120px;max-width:180px');
   const zoomText = element('span'), zoomValue = element('span');
   const zoomSlider = element('input', 'grid-column:1/-1;min-width:0;width:100%;margin:0;accent-color:var(--nc-focus,#2563eb)');
@@ -907,69 +908,95 @@ export function createChartWithPlanner(planner: ChartPlanner, host: HTMLElement,
       return;
     }
     if (!frame.viewport) return;
-    const {min = .1, max = 15, increment = 1} = options.viewport?.zoom ?? {};
-    const amount = zoomLabel.isConnected ? zoomSlider.valueAsNumber : Math.min(max, Math.max(min, increment));
+    const adjustable = zoomLabel.isConnected;
+    const amount = adjustable ? zoomSlider.valueAsNumber : 1;
     const current = viewportZoomLevel(frame.viewport);
-    const target = action === ChartToolbarAction.ZoomIn ? current + amount : Math.max(1, current - amount);
+    const {axes, bounds} = frame.viewport;
+    const categoryCount = axes !== 'y' && bounds.x.type === 'category' ? bounds.x.ids.length : 0;
+    const limit = adjustable ? Infinity : categoryCount ? categoryCount / Math.ceil(categoryCount / 20) : 20;
+    const target = action === ChartToolbarAction.ZoomIn
+      ? Math.max(current, Math.min(limit, current + amount))
+      : Math.max(1, current - amount);
     if (target === 1 && current > 1) applyViewport(viewportActions.reset);
     else if (Number.isFinite(target) && target !== current) applyViewport({type:'zoom', factor:target / current});
   }
   function paintToolbar(labels: ReturnType<typeof messages>): void {
     const configured = options.toolbar?.actions ?? options.downloadMenu?.map(format => 'download-' + format) ?? [];
+    const separate = options.viewport?.zoom?.position === ChartZoomPosition.Below;
     const actions: string[] = [];
     let hasZoom = false;
     for (const action of configured) {
       if (action === ChartToolbarAction.Zoom || Object.hasOwn(viewportActions, action)) {
         if (frame.viewport && !hasZoom) {
-          actions.push(ChartToolbarAction.Zoom);
+          if (!separate) actions.push(ChartToolbarAction.Zoom);
           hasZoom = true;
         }
       } else actions.push(action);
     }
     if (!hasZoom && frame.viewport && options.viewport?.controls !== false) {
-      actions.unshift(ChartToolbarAction.Zoom);
+      if (!separate) actions.unshift(ChartToolbarAction.Zoom);
       hasZoom = true;
     }
-    if (!hasZoom && doc.activeElement === zoomSlider) root.focus({preventScroll:true});
+    const showSlider = hasZoom && options.viewport?.zoom?.showSlider === true;
+    const focused = doc.activeElement as HTMLElement | null;
+    const zoomFocused = focused !== null && zoomGroup?.contains(focused);
+    if (zoomFocused && (!hasZoom || (!showSlider && focused === zoomSlider))) root.focus({preventScroll:true});
+    if (!hasZoom) zoomGroup?.remove();
+    const group = hasZoom ? syncZoomGroup(labels, showSlider, separate) : undefined;
+    if (group && separate && chartArea.nextElementSibling !== group) chartArea.after(group);
     if (!actions.length) {
       downloadToolbar?.remove();
       downloadToolbar = undefined;
-      return;
+    } else {
+      syncDownloadToolbar(actions, labels, group, separate);
     }
+    if (zoomFocused && (showSlider || focused !== zoomSlider) && focused.isConnected && group?.contains(focused) && doc.activeElement !== focused) {
+      focused.focus({preventScroll:true});
+    }
+  }
+  function syncZoomGroup(labels: ReturnType<typeof messages>, showSlider: boolean, separate: boolean): HTMLDivElement {
+    if (!zoomGroup) {
+      zoomGroup = element('div', 'display:flex;align-items:center;gap:8px;min-width:0');
+      zoomGroup.dataset.action = ChartToolbarAction.Zoom;
+      zoomGroup.setAttribute('role', 'group');
+      zoomGroup.append(...zoomButtons.map(action => button('', action)));
+    }
+    const group = zoomGroup;
+    group.setAttribute('aria-label', labels.zoom);
+    const position = separate ? ChartZoomPosition.Below : ChartZoomPosition.Toolbar;
+    if (group.dataset.zoomPosition !== position) group.dataset.zoomPosition = position;
+    if ((group.firstElementChild === zoomLabel) !== showSlider) {
+      if (showSlider) group.prepend(zoomLabel);
+      else zoomLabel.remove();
+    }
+    if (showSlider) syncZoomSlider(labels.zoom);
+    [labels.zoomIn, labels.zoomOut, labels.reset].forEach((label, index) => {
+      const child = group.children[index + Number(showSlider)] as HTMLButtonElement;
+      if (child.title === label) return;
+      child.title = label;
+      child.setAttribute('aria-label', label);
+    });
+    return group;
+  }
+  function syncDownloadToolbar(
+    actions: readonly string[], labels: ReturnType<typeof messages>, group: HTMLDivElement | undefined, separate: boolean,
+  ): void {
     const toolbar = downloadToolbar ??= element('div', 'display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end');
     const position = (options.toolbar ? options.toolbar.position : options.downloadMenuPosition)
-      ?? (hasZoom ? ChartDownloadMenuPosition.Top : ChartDownloadMenuPosition.Bottom);
+      ?? (group && !separate ? ChartDownloadMenuPosition.Top : ChartDownloadMenuPosition.Bottom);
     toolbar.dataset.downloadToolbar = position;
     toolbar.setAttribute('role', 'group');
-    toolbar.setAttribute('aria-label', options.toolbar || hasZoom ? labels.toolbar : labels.downloads);
+    toolbar.setAttribute('aria-label', options.toolbar || (group && !separate) ? labels.toolbar : labels.downloads);
     const children = toolbar.children as HTMLCollectionOf<HTMLElement>;
     if (children.length !== actions.length || actions.some((action, index) => action !== children[index]?.dataset.action)) {
-      const restoreSlider = doc.activeElement === zoomSlider;
-      toolbar.replaceChildren(...actions.map(action => {
-        if (action !== ChartToolbarAction.Zoom) return button(action.slice(9).toUpperCase(), action);
-        const group = element('div', 'display:flex;align-items:center;gap:8px;min-width:0;flex:0 1 260px');
-        group.dataset.action = action;
-        group.setAttribute('role', 'group');
-        group.append(...zoomButtons.map(action => button('', action)), zoomLabel);
-        return group;
-      }));
-      if (hasZoom && restoreSlider) zoomSlider.focus({preventScroll:true});
-    }
-    const group = toolbar.querySelector('[data-action="zoom"]');
-    if (group) {
-      group.setAttribute('aria-label', labels.zoom);
-      syncZoomSlider(labels.zoom);
-      [labels.zoomIn, labels.zoomOut, labels.reset].forEach((label, index) => {
-        const child = group.children[index] as HTMLButtonElement;
-        if (child.title === label) return;
-        child.title = label;
-        child.setAttribute('aria-label', label);
-      });
+      toolbar.replaceChildren(...actions.map(action => action === ChartToolbarAction.Zoom && group
+        ? group : button(action.slice(9).toUpperCase(), action)));
     }
     const above = position === ChartDownloadMenuPosition.Top;
     toolbar.style.margin = above ? '0 0 8px' : '8px 0 0';
-    if ((above ? chartArea.previousElementSibling : chartArea.nextElementSibling) !== toolbar) {
-      chartArea[above ? 'before' : 'after'](toolbar);
+    const anchor = !above && separate && group ? group : chartArea;
+    if ((above ? anchor.previousElementSibling : anchor.nextElementSibling) !== toolbar) {
+      anchor[above ? 'before' : 'after'](toolbar);
     }
   }
   function exportPng(settings: import('./export.js').PngExportOptions = {}): Promise<Blob> {

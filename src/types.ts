@@ -120,8 +120,17 @@ export enum ChartToolbarAction {
 
 export {ChartDownloadMenuPosition as ChartToolbarPosition};
 
-/** Range, initial increment and visible label of the toolbar zoom control. */
+export enum ChartZoomPosition {
+  Toolbar = 'toolbar',
+  Below = 'below',
+}
+
+/** Settings for the optional zoom increment slider. */
 export interface ChartZoomOptions {
+  /** Show the slider before the three zoom buttons. Defaults to false. */
+  readonly showSlider?: boolean;
+  /** Keep the controls in the main toolbar or place them on a separate row below the chart. Defaults to Toolbar. */
+  readonly position?: ChartZoomPosition;
   readonly min?: number;
   readonly max?: number;
   readonly step?: number;

@@ -19,5 +19,5 @@ export function createBarChart(host:HTMLElement,data:Extract<ChartData,{type:'co
   const checked=validateOptions(options);if(checked.status==='invalid')return checked;
   return createChartWithPlanner(planCartesianChart,host,data,{...checked.value,layout:{...checked.value.layout,orientation:'horizontal'}},mount);
 }
-export {ChartDownloadFormat,ChartDownloadMenuPosition,ChartToolbarAction,ChartToolbarPosition} from './types.js';
+export {ChartDownloadFormat,ChartDownloadMenuPosition,ChartToolbarAction,ChartToolbarPosition,ChartZoomPosition} from './types.js';
 export type {ChartData,ChartOptions,ChartZoomOptions,ChartMountOptions,ChartController} from './types.js';

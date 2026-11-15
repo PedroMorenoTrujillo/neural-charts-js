@@ -11,6 +11,6 @@ export type { SvgRenderOptions, CsvExportOptions, PngExportOptions } from './exp
 export type {SvgExportOptions} from './export-layout.js';
 export type { ChartDataTable, ChartTablePage } from './table.js';
 export type { ChartResponsiveRule, ChartAccessibilityOptions, ChartNumberFormat, ChartDateFormat, ChartSeriesStyle, ChartPointStyle, ChartReferenceBandStyle, ChartAxisOptions, ChartLabelLayout, ChartReferenceStyle } from './types.js';
-export { ChartDownloadFormat, ChartDownloadMenuPosition, ChartToolbarAction, ChartToolbarPosition } from './types.js';
+export { ChartDownloadFormat, ChartDownloadMenuPosition, ChartToolbarAction, ChartToolbarPosition, ChartZoomPosition } from './types.js';
 export type { ChartTextStyle, ChartWaterfallStyle } from './types.js';
 export type { ChartData, ChartOptions, ChartZoomOptions, ChartLayoutOptions, ChartPlanningPorts, ChartType, ChartResult, ChartDiagnostic, ChartMountOptions, ChartController, ChartPointId, PlanFrame, PlanObservation } from './types.js';
