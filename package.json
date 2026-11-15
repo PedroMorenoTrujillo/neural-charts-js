@@ -1,0 +1,55 @@
+{
+  "name": "@neural-charts/web",
+  "version": "1.0.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PedroMorenoTrujillo/neural-charts-js.git"
+  },
+  "homepage": "https://charts.neuralui.org/",
+  "bugs": {
+    "url": "https://github.com/PedroMorenoTrujillo/neural-charts-js/issues"
+  },
+  "engines": {
+    "node": ">=22.22.3"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./cartesian": {
+      "types": "./dist/cartesian.d.ts",
+      "import": "./dist/cartesian.js"
+    },
+    "./financial": {
+      "types": "./dist/financial.d.ts",
+      "import": "./dist/financial.js"
+    },
+    "./drilldown": {
+      "types": "./dist/drilldown.d.ts",
+      "import": "./dist/drilldown.js"
+    },
+    "./panels": {
+      "types": "./dist/panels.d.ts",
+      "import": "./dist/panels.js"
+    }
+  },
+  "dependencies": {
+    "@neural-charts/core": "0.1.4"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  }
+}
