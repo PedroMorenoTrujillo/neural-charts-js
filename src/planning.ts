@@ -1,7 +1,7 @@
 import type { planChart } from '@neural-charts/core';
 import type { PlanSpec, PlanOptions, PlanFrame } from '@neural-charts/core';
 import type { ChartData, ChartNumberFormat, ChartOptions, ChartResult, ChartPlanningPorts, ChartType } from './types.js';
-import { ChartDownloadFormat, ChartDownloadMenuPosition, ChartToolbarAction } from './types.js';
+import { ChartDownloadFormat, ChartDownloadMenuPosition, ChartToolbarAction, ChartZoomPosition } from './types.js';
 import { chartCapabilities, isSupportedChartType } from './capabilities.js';
 import { allLayoutKeys, layoutKeysFor, translatedLayoutKeysFor } from './layout.js';
 import { planDefaultChart } from './default-planner.js';
@@ -336,7 +336,9 @@ export function validateOptions(options: ChartOptions, partialNumberFormats=fals
       checkOption(String(v.axes), ['x', 'y', 'xy'], 'INVALID_VIEWPORT_AXES');
       checkOption(v.wheel, [false, 'ctrl', 'always'], 'INVALID_WHEEL_MODE');
       if (o.viewport.zoom !== undefined) {
-        const z = object(o.viewport.zoom, ['min', 'max', 'step', 'increment', 'label']);
+        const z = object(o.viewport.zoom, ['showSlider', 'position', 'min', 'max', 'step', 'increment', 'label']);
+        booleans(z, ['showSlider']);
+        checkOption(z.position, [ChartZoomPosition.Toolbar, ChartZoomPosition.Below], 'INVALID_ZOOM_POSITION');
         const {min = .1, max = 15, step = .1, increment} = o.viewport.zoom;
         const positive = (value: number) => Number.isFinite(value) && value > 0;
         if (![min, max, step].every(positive) || max <= min || step > max - min ||
