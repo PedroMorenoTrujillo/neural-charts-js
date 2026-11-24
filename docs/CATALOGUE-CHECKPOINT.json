@@ -1,0 +1,702 @@
+{
+  "recordedAt": "2026-11-02T20:21:44.270Z",
+  "result": "CATALOGUE INTEGRATION PASS; V1 NOT CERTIFIED",
+  "scope": "62 Native families,319 variants. Real packaged Web and Angular consumers. Option and interaction coverage is reported separately.",
+  "buildInfo": {
+    "generatedAt": "2026-11-02T20:09:03.306Z",
+    "core": "0.0.23",
+    "catalogSha256": "27b5b442f9eb88d5983c2cab56620a21708f06a83dc27538758607f00518b9d4",
+    "packages": {
+      "@neural-charts/web": {
+        "archive": "vendor/neural-charts-web-0.0.0-8a92a7ad55d1.tgz",
+        "sha256": "8a92a7ad55d194a0c6d900eac556bba30bb5c8357a2003f6c7387db108b7da12"
+      },
+      "@neural-charts/angular": {
+        "archive": "vendor/neural-charts-angular-0.0.0-5a3289fe2971.tgz",
+        "sha256": "5a3289fe2971e4e7ab07c3465f420536720470478c64f942eac654b28507446a"
+      }
+    }
+  },
+  "core": "0.0.23",
+  "typedRecipes": 319,
+  "negativeTypeControls": 3,
+  "webBrowser": [
+    {
+      "browser": "chromium",
+      "version": "153.0.8010.12",
+      "variants": 319,
+      "resources": {
+        "cycles": 100,
+        "observers": 0,
+        "frames": 0,
+        "late": 0
+      }
+    },
+    {
+      "browser": "firefox",
+      "version": "155.0",
+      "variants": 319,
+      "resources": {
+        "cycles": 100,
+        "observers": 0,
+        "frames": 0,
+        "late": 0
+      }
+    },
+    {
+      "browser": "webkit",
+      "version": "26.6",
+      "variants": 319,
+      "resources": {
+        "cycles": 100,
+        "observers": 0,
+        "frames": 0,
+        "late": 0
+      }
+    }
+  ],
+  "showcaseBrowser": {
+    "chromium": 638,
+    "firefox": 638,
+    "webkit": 638
+  },
+  "navigation": {
+    "status": "PASS",
+    "browser": "chromium",
+    "checks": [
+      {
+        "family": "fan",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "regression",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "flame",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "violin",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "dendrogram",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "parallel",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "heatmap",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "venn",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "wordcloud",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "pictorial",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "tilemap",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "contour",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "dependencywheel",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "arcdiagram",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "chord",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "bullet",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "variwide",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "xrange",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "timeline",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "vector",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "windbarb",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "line",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "column",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "bar",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "area",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "spline",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "areaspline",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "streamgraph",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "arearange",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "areasplinerange",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "columnrange",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "boxplot",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "errorbar",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "mixed",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "waterfall",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "lollipop",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "dumbbell",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "columnpyramid",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "scatter",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "bubble",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "polygon",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "histogram",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "bellcurve",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "pareto",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "pie",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "donut",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "gauge",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "variablepie",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "item",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "treemap",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "sunburst",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "funnel",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "pyramid",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "sankey",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "treegraph",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "organization",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "networkgraph",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "packedbubble",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "radar",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "polar",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "windrose",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "family": "radialbar",
+        "aliasRedirect": true,
+        "activeFamily": true
+      },
+      {
+        "guide": "/guide/introduction",
+        "realDocument": true
+      },
+      {
+        "guide": "/guide/installation",
+        "realDocument": true
+      },
+      {
+        "guide": "/guide/data-options",
+        "realDocument": true
+      },
+      {
+        "guide": "/guide/interaction",
+        "realDocument": true
+      },
+      {
+        "guide": "/guide/axes",
+        "realDocument": true
+      },
+      {
+        "guide": "/guide/themes",
+        "realDocument": true
+      },
+      {
+        "guide": "/guide/accessibility",
+        "realDocument": true
+      },
+      {
+        "guide": "/guide/ssr",
+        "realDocument": true
+      },
+      {
+        "guide": "/guide/export",
+        "realDocument": true
+      },
+      {
+        "guide": "/guide/performance",
+        "realDocument": true
+      },
+      {
+        "guide": "/guide/api",
+        "realDocument": true
+      }
+    ]
+  },
+  "hydrationAndResources": [
+    {
+      "browser": "chromium",
+      "hydrationDomReuse": true,
+      "modeSwitches": 100,
+      "domainOutputs": 100,
+      "resources": {
+        "observers": 0,
+        "retainedOwnerListeners": 0,
+        "owners": 0
+      },
+      "touch": "PASS"
+    },
+    {
+      "browser": "firefox",
+      "hydrationDomReuse": true,
+      "modeSwitches": 100,
+      "domainOutputs": 100,
+      "resources": {
+        "observers": 0,
+        "retainedOwnerListeners": 0,
+        "owners": 0
+      },
+      "touch": "PASS"
+    },
+    {
+      "browser": "webkit",
+      "hydrationDomReuse": true,
+      "modeSwitches": 100,
+      "domainOutputs": 100,
+      "resources": {
+        "observers": 0,
+        "retainedOwnerListeners": 0,
+        "owners": 0
+      },
+      "touch": "PASS"
+    }
+  ],
+  "automatedAccessibility": {
+    "cases": 39,
+    "violations": [],
+    "scope": "WCAG2A/AA and2.1A/AA automated representative pages, not manual screen-reader certification"
+  },
+  "bundle": [
+    {
+      "name": "unused",
+      "raw": 21,
+      "gzip": 41,
+      "brotli": 25
+    },
+    {
+      "name": "factory",
+      "raw": 456655,
+      "gzip": 144211,
+      "brotli": 116316
+    }
+  ],
+  "performance": {
+    "recordedAt": "2026-11-02T20:21:43.447Z",
+    "environment": {
+      "node": "v22.22.3",
+      "os": "darwin",
+      "arch": "arm64",
+      "cpu": "Apple M2 Pro"
+    },
+    "dataset": "Deterministic sine wave; original values retained; no historical benchmark changed",
+    "scope": "Pure planning plus SVG serialization. Browser render, gestures, heap retention and all-family performance certification are separate pending gates.",
+    "results": [
+      {
+        "type": "line",
+        "status": "MEASURED",
+        "countPerSeries": 1000,
+        "seriesCount": 1,
+        "logicalPoints": 1000,
+        "observations": 1000,
+        "svgBytes": 173250,
+        "svgElements": 1035,
+        "milliseconds": {
+          "planning": {
+            "p50": 4.932249999999982,
+            "p95": 8.258332999999993,
+            "samples": 15
+          },
+          "serialization": {
+            "p50": 1.6674579999999821,
+            "p95": 2.335542000000004,
+            "samples": 15
+          }
+        }
+      },
+      {
+        "type": "line",
+        "status": "MEASURED",
+        "countPerSeries": 5000,
+        "seriesCount": 1,
+        "logicalPoints": 5000,
+        "observations": 5000,
+        "svgBytes": 190213,
+        "svgElements": 35,
+        "milliseconds": {
+          "planning": {
+            "p50": 22.891250000000014,
+            "p95": 28.801582999999937,
+            "samples": 15
+          },
+          "serialization": {
+            "p50": 5.103207999999995,
+            "p95": 8.48904200000004,
+            "samples": 15
+          }
+        }
+      },
+      {
+        "type": "line",
+        "status": "MEASURED",
+        "countPerSeries": 10000,
+        "seriesCount": 1,
+        "logicalPoints": 10000,
+        "observations": 10000,
+        "svgBytes": 378186,
+        "svgElements": 35,
+        "milliseconds": {
+          "planning": {
+            "p50": 47.83470800000009,
+            "p95": 54.283791000000065,
+            "samples": 15
+          },
+          "serialization": {
+            "p50": 11.56454100000019,
+            "p95": 17.050707999999986,
+            "samples": 15
+          }
+        }
+      },
+      {
+        "type": "line",
+        "logicalPoints": 50000,
+        "status": "REJECTED_BY_PUBLIC_CORE_LIMIT",
+        "diagnostic": {
+          "code": "INVALID_CONFIG",
+          "reason": "INPUT_LIMIT",
+          "path": "spec",
+          "message": "INPUT_LIMIT"
+        }
+      },
+      {
+        "type": "column",
+        "status": "MEASURED",
+        "countPerSeries": 10,
+        "seriesCount": 3,
+        "logicalPoints": 30,
+        "observations": 30,
+        "svgBytes": 7114,
+        "svgElements": 76,
+        "milliseconds": {
+          "planning": {
+            "p50": 0.3355830000000424,
+            "p95": 1.5862919999999576,
+            "samples": 15
+          },
+          "serialization": {
+            "p50": 0.07633299999997689,
+            "p95": 0.11341599999991558,
+            "samples": 15
+          }
+        }
+      },
+      {
+        "type": "column",
+        "status": "MEASURED",
+        "countPerSeries": 64,
+        "seriesCount": 3,
+        "logicalPoints": 192,
+        "observations": 192,
+        "svgBytes": 29979,
+        "svgElements": 242,
+        "milliseconds": {
+          "planning": {
+            "p50": 1.390875000000051,
+            "p95": 2.191707999999835,
+            "samples": 15
+          },
+          "serialization": {
+            "p50": 0.2837920000001759,
+            "p95": 0.3617500000000291,
+            "samples": 15
+          }
+        }
+      },
+      {
+        "type": "column",
+        "logicalPoints": 300,
+        "status": "REJECTED_BY_PUBLIC_CORE_LIMIT",
+        "diagnostic": {
+          "code": "INVALID_CONFIG",
+          "reason": "LABEL_LIMIT",
+          "path": "axes.x.values",
+          "message": "LABEL_LIMIT"
+        }
+      },
+      {
+        "type": "column",
+        "logicalPoints": 3000,
+        "status": "REJECTED_BY_PUBLIC_CORE_LIMIT",
+        "diagnostic": {
+          "code": "INVALID_CONFIG",
+          "reason": "LABEL_LIMIT",
+          "path": "axes.x.values",
+          "message": "LABEL_LIMIT"
+        }
+      },
+      {
+        "type": "scatter",
+        "status": "MEASURED",
+        "countPerSeries": 5000,
+        "seriesCount": 1,
+        "logicalPoints": 5000,
+        "observations": 5000,
+        "svgBytes": 471397,
+        "svgElements": 5036,
+        "milliseconds": {
+          "planning": {
+            "p50": 30.47895900000003,
+            "p95": 39.420416999999816,
+            "samples": 15
+          },
+          "serialization": {
+            "p50": 7.197625000000244,
+            "p95": 9.400458000000071,
+            "samples": 15
+          }
+        }
+      }
+    ]
+  },
+  "angularPackage": {
+    "file": "neural-charts-angular-0.0.0.tgz",
+    "sha256": "5a3289fe2971e4e7ab07c3465f420536720470478c64f942eac654b28507446a",
+    "dependencies": {
+      "@neural-charts/web": "0.0.0"
+    },
+    "peers": {
+      "@angular/core": "^22.2.3"
+    },
+    "private": true
+  },
+  "visual": {
+    "captures": 561,
+    "zipSha256": "e76facd43970b5a40b5c4a22ea5a5ad070e50715bbd02e4082306036cd3a5c84",
+    "humanApproval": "PENDING",
+    "historicalProtectedPngChanged": 0
+  },
+  "pending": [
+    "Human visual approval",
+    "Manual VoiceOver/Safari",
+    "Manual NVDA/Firefox",
+    "Historical B/C budgets and generic Core bundle retention",
+    "Published Core category/point capacity",
+    "Advanced export/animation/gesture migration",
+    "Stock-specific inventory and full variant/option parity",
+    "Server SVG rendering"
+  ],
+  "protected": {
+    "historicalHead": "1eb7043e05d86ba467e553c3dc0825634533d9c6",
+    "frozenA": 26,
+    "frozenIntegrity": "PASS",
+    "protectedPng": 1544,
+    "pngIntegrity": "PASS",
+    "referenceRepositoriesModified": false
+  },
+  "operations": {
+    "push": false,
+    "remotesCreated": false,
+    "tags": false,
+    "releases": false,
+    "publish": false,
+    "deployment": false,
+    "agents": false
+  }
+}

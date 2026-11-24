@@ -1,0 +1,449 @@
+{
+  "source": "Archived external series inventory",
+  "checkedAt": "2026-11-02T18:02:33.052Z",
+  "product": "External series catalogue",
+  "excluded": [
+    "cylinder",
+    "funnel3d",
+    "pyramid3d",
+    "scatter3d"
+  ],
+  "target": [
+    "arcdiagram",
+    "area",
+    "arearange",
+    "areaspline",
+    "areasplinerange",
+    "bar",
+    "bellcurve",
+    "boxplot",
+    "bubble",
+    "bullet",
+    "column",
+    "columnpyramid",
+    "columnrange",
+    "contour",
+    "dependencywheel",
+    "dumbbell",
+    "errorbar",
+    "funnel",
+    "gauge",
+    "heatmap",
+    "histogram",
+    "item",
+    "line",
+    "lollipop",
+    "networkgraph",
+    "organization",
+    "packedbubble",
+    "pareto",
+    "pictorial",
+    "pie",
+    "polygon",
+    "pyramid",
+    "sankey",
+    "scatter",
+    "solidgauge",
+    "spline",
+    "streamgraph",
+    "sunburst",
+    "tilemap",
+    "timeline",
+    "treegraph",
+    "treemap",
+    "variablepie",
+    "variwide",
+    "vector",
+    "venn",
+    "waterfall",
+    "windbarb",
+    "wordcloud",
+    "xrange"
+  ],
+  "separateProducts": [
+    {
+      "id": "abands",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "ad",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "ao",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "apo",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "aroon",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "aroonoscillator",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "atr",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "bb",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "candlestick",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "cci",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "chaikin",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "cmf",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "cmo",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "dema",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "disparityindex",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "dmi",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "dpo",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "ema",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "flags",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "flowmap",
+      "products": [
+        "highmaps"
+      ]
+    },
+    {
+      "id": "gantt",
+      "products": [
+        "gantt"
+      ]
+    },
+    {
+      "id": "geoheatmap",
+      "products": [
+        "highmaps"
+      ]
+    },
+    {
+      "id": "heikinashi",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "hlc",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "hollowcandlestick",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "ikh",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "keltnerchannels",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "klinger",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "linearregression",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "linearregressionangle",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "linearregressionintercept",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "linearregressionslope",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "macd",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "map",
+      "products": [
+        "highmaps"
+      ]
+    },
+    {
+      "id": "mapbubble",
+      "products": [
+        "highmaps"
+      ]
+    },
+    {
+      "id": "mapline",
+      "products": [
+        "highmaps"
+      ]
+    },
+    {
+      "id": "mappoint",
+      "products": [
+        "highmaps"
+      ]
+    },
+    {
+      "id": "mfi",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "momentum",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "natr",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "obv",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "ohlc",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "pc",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "pivotpoints",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "pointandfigure",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "ppo",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "priceenvelopes",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "psar",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "renko",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "roc",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "rsi",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "slowstochastic",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "sma",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "stochastic",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "supertrend",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "tema",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "tiledwebmap",
+      "products": [
+        "highmaps"
+      ]
+    },
+    {
+      "id": "trendline",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "trix",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "vbp",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "vwap",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "williamsr",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "wma",
+      "products": [
+        "highstock"
+      ]
+    },
+    {
+      "id": "zigzag",
+      "products": [
+        "highstock"
+      ]
+    }
+  ]
+}

@@ -5,6 +5,8 @@ import {chartSvg,escapeXml,hasSideLegend,plotBounds,svgOpening} from './svg.js';
 import {themeTokens} from './theme.js';
 import {seriesStyles,markerElement} from './series-style.js';
 import {contentText,titleContext,legendContext,ownContent} from './content.js';
+import {componentDash, visibleComponentLines} from './component-lines.js';
+import {financialComponentLabel} from './locale.js';
 import type {ChartContentPorts} from './content.js';
 export interface SvgExportOptions { readonly composition?: 'chart' | 'plot'; readonly legend?: boolean; readonly description?: boolean; readonly content?:ChartContentPorts; }
 
@@ -59,10 +61,24 @@ export function serializeChartExport(frame:PlanFrame,options:ChartOptions,id:str
   const headerHeight = titleLayout.height + descriptionLayout.height + 12;
   const header = titleLayout.markup + descriptionLayout.markup;
   const legendWidth=side?sideWidth-12:contentWidth,columns=side?1:Math.max(1,Math.min(3,Math.floor(legendWidth/180))),cellWidth=legendWidth/columns,items=entries.map(item=>{const label=custom?.legend?contentText(custom,'legend',legendContext(frame,options.locale,item)):item.name;return{item,label,lines:wrap(label,Math.max(4,Math.floor((cellWidth-26)/7)))}}),rows:number[]=[];
-  items.forEach((item,i)=>{const row=Math.floor(i/columns);rows[row]=Math.max(rows[row]??0,item.lines.length*17+10);});const offsets:number[]=[];let legendHeight=0;for(const height of rows){offsets.push(legendHeight);legendHeight+=height;}
+  const components = entries.length ? visibleComponentLines(frame) : [];
+  const componentItems = components.map(component => {
+    const label = financialComponentLabel(component, options.locale);
+    return {
+      item: {id:component,name:label,color:tokens.foreground,visible:true},
+      label, lines:wrap(label,Math.max(4,Math.floor((cellWidth-26)/7))), component,
+    };
+  });
+  const legendItems = [...items.map(entry => ({...entry, component:undefined})), ...componentItems];
+  legendItems.forEach((item,i)=>{const row=Math.floor(i/columns);rows[row]=Math.max(rows[row]??0,item.lines.length*17+10);});const offsets:number[]=[];let legendHeight=0;for(const height of rows){offsets.push(legendHeight);legendHeight+=height;}
   const topLegend=!side&&position==='top'?legendHeight+12:0,plotX=pad+(side&&position==='left'?sideWidth:0),plotY=pad+headerHeight+topLegend,legendX=side?(position==='left'?pad:pad+pw+12):pad,legendY=side?plotY:position==='top'?pad+headerHeight:plotY+ph+16,height=plotY+Math.max(ph,side?legendHeight:ph+(!side&&entries.length&&position!=='top'?legendHeight+16:0))+pad;
   const patterns=new Map<string,string>();let patternIndex=0;for(const item of frame.legend) {const style=styles.get(item.id);if(style?.pattern&&style.pattern!=='none')patterns.set(item.id,`${id}-pattern-${patternIndex++}`);}
-  let legend='';items.forEach(({item,label:legendLabel,lines},i)=>{const column=rtl?columns-1-i%columns:i%columns,row=Math.floor(i/columns),x=legendX+column*cellWidth,y=legendY+offsets[row]!,markX=rtl?x+cellWidth-14:x,tx=rtl?x+cellWidth-22:x+22,index=frame.legend.findIndex(s=>s.id===item.id),style=styles.get(item.id),color=style?.color??options.appearance?.colors?.[index%(options.appearance.colors.length||1)]??item.color,pattern=patterns.get(item.id),fill=pattern?`url(#${pattern})`:color;
+  let legend='';legendItems.forEach(({item,label:legendLabel,lines,component},i)=>{const column=rtl?columns-1-i%columns:i%columns,row=Math.floor(i/columns),x=legendX+column*cellWidth,y=legendY+offsets[row]!,markX=rtl?x+cellWidth-14:x,tx=rtl?x+cellWidth-22:x+22,index=frame.legend.findIndex(s=>s.id===item.id),style=styles.get(item.id),color=style?.color??options.appearance?.colors?.[index%(options.appearance.colors.length||1)]??item.color,pattern=patterns.get(item.id),fill=pattern?`url(#${pattern})`:color;
+    if (component) {
+      const dash = componentDash(frame.family,component);
+      legend += `<g data-export-component="${escapeXml(component)}"><path d="M${markX},${y+7} h14" stroke="${tokens.foreground}" stroke-width="2"${dash ? ` stroke-dasharray="${dash}"` : ''}/>${lines.map((line,j)=>text(tx,y+12+j*17,line)).join('')}</g>`;
+      return;
+    }
     const sourceSeries=frame.series.find(s=>s.id===item.id),lineSeries=!!sourceSeries?.commands&&!sourceSeries.fill&&!sourceSeries.areaCommands;
     legend+=`<g data-export-legend="${escapeXml(item.id)}" opacity="${item.visible?1:.45}"><title>${escapeXml(legendLabel)}</title>${lineSeries?`<path d="M${markX},${y+7} h14" stroke="${color}" stroke-width="2"${style?.dash==='dashed'?' stroke-dasharray="4 3"':style?.dash==='dotted'?' stroke-dasharray="1 3"':''}/>${style?.marker?markerElement(style.marker,markX+7,y+7,3,`fill="${color}"`):''}`:`<rect x="${markX}" y="${y+2}" width="14" height="10" fill="${fill}"/>`}${lines.map((s,j)=>text(tx,y+12+j*17,s)).join('')}${!item.visible?`<path d="M${tx},${y+7} h${(rtl?-1:1)*Math.min(cellWidth-26,legendLabel.length*7)}" stroke="${tokens.foreground}"/>`:''}</g>`;});
   const drawing=plot.replace('<svg ',`<svg x="${plotX}" y="${plotY}" aria-hidden="true" `).replace(/ role="img" lang="[^"]*" aria-labelledby="[^"]*"/,'');

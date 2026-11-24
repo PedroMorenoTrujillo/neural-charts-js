@@ -69,7 +69,7 @@ export interface ChartAxisOptions {
   readonly visible?: boolean; readonly title?: string;
   readonly titleStyle?: ChartTextStyle;
   readonly numberFormat?: ChartNumberFormat;
-  readonly labels?: Readonly<{maxLines?: 1 | 2 | 3; maxCharacters?: number; rotation?: number; layout?: ChartLabelLayout}>;
+  readonly labels?: Readonly<{maxLines?: 1 | 2 | 3; maxCharacters?: number; rotation?: number; layout?: ChartLabelLayout; style?: Omit<ChartTextStyle, 'align'>}>;
 }
 export interface ChartReferenceStyle {
   readonly id:string; readonly color?:string;
@@ -166,8 +166,8 @@ export interface ChartOptions<T extends ChartType = ChartType> {
   }>;
   readonly colorAxis?: T extends 'heatmap' | 'tilemap' ? Extract<PlanSpec, { family: 'tilemap' }>['colorAxis'] : never;
   readonly axes?: Readonly<{ grid?: boolean; x?: ChartAxisOptions; y?: ChartAxisOptions; secondaryY?: ChartAxisOptions }>;
-  readonly legend?: Readonly<{ visible?: boolean; position?: 'top' | 'bottom' | 'left' | 'right'; interactive?: boolean; reverse?: boolean; maxLabelCharacters?: number; itemSpacing?: number }>;
-  readonly tooltip?: Readonly<{ enabled?: boolean; content?: 'point' | 'shared'; placement?: 'auto' | 'docked'; crosshair?: boolean; pinnable?: boolean; background?: string; foreground?: string }>;
+  readonly legend?: Readonly<{ visible?: boolean; position?: 'top' | 'bottom' | 'left' | 'right'; interactive?: boolean; reverse?: boolean; maxLabelCharacters?: number; itemSpacing?: number; maxHeight?: number }>;
+  readonly tooltip?: Readonly<{ enabled?: boolean; content?: 'point' | 'shared'; placement?: 'auto' | 'docked' | 'below'; crosshair?: boolean; pinnable?: boolean; background?: string; foreground?: string; maxWidth?: number; maxHeight?: number }>;
   /** Built-in download buttons in display order. Omit or pass [] to hide them. */
   readonly downloadMenu?: readonly `${ChartDownloadFormat}`[];
   /** Places the download toolbar above or below the chart and its legend. Defaults to Bottom. */

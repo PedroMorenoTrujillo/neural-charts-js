@@ -1,0 +1,26 @@
+import fs from 'node:fs';
+import {capabilitySource} from './capability-source.mjs';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { build } from 'esbuild';
+
+const root = path.resolve(import.meta.dirname, '..'), source = process.argv[2];
+if (!source || !fs.existsSync(path.join(source, 'src/showcase/live-examples.ts'))) throw Error('Pass the read-only Native repository path.');
+const work = path.join(root, 'work'); fs.mkdirSync(work, { recursive: true });
+const entry = path.join(work, 'export-native-recipes.ts'), output = path.join(work, 'export-native-recipes.mjs');
+const live = path.join(source, 'src/showcase/live-examples.ts'), dataset = path.join(source, 'src/showcase/dataset.ts'), caps = path.join(source, 'src/library/chart-capabilities.ts');
+const content = path.join(source, 'src/showcase/showcase-content.ts');
+fs.writeFileSync(entry, `import{liveExamples,exampleSpec,exampleOptions}from${JSON.stringify(live)};import{demoLayoutOptions}from${JSON.stringify(dataset)};import{chartCapabilities}from${JSON.stringify(caps)};import{catalogGroups,familyContent}from${JSON.stringify(content)};const result=[];for(const family of Object.keys(chartCapabilities)){for(const example of liveExamples(family,'es')){const options=exampleOptions(family,example.id,'es');result.push({family,...example,spec:exampleSpec(family,example.id,options,'es'),settings:options,layout:demoLayoutOptions(family,options)});}}const familyCopy=Object.fromEntries(Object.entries(familyContent.es).map(([id,c])=>[id,{name:c.name,description:c.description,when:c.when}]));console.log(JSON.stringify({capabilities:chartCapabilities,groups:catalogGroups,familyCopy,examples:result}));`);
+const require = createRequire(path.join(root, 'package.json'));
+const result = await build({ entryPoints: [entry], outfile: output, bundle: true, format: 'esm', platform: 'node', metafile: true, plugins: [{ name: 'published-core-for-recipe-export', setup(b) { b.onResolve({ filter: /^@neural-charts\/core(?:\/plan)?$/ }, args => ({ path: require.resolve(args.path) })); } }] });
+if (Object.keys(result.metafile.inputs).some(p => /node_modules\/(?:@angular|react-native|expo)\//.test(p))) throw Error('Recipe extraction must not load framework/runtime renderers.');
+const data = JSON.parse(execFileSync(process.execPath, [output], { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024, timeout: 120000 }));
+const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: source, encoding: 'utf8' }).trim();
+const provenance = { sourceRepository: 'neural-charts-native', sourceHead: head, sourceFiles: Object.keys(result.metafile.inputs).filter(p => path.resolve(p).startsWith(source + path.sep)).map(p => ({ file: path.relative(source, p), sha256: createHash('sha256').update(fs.readFileSync(p)).digest('hex') })), core: JSON.parse(fs.readFileSync(require.resolve('@neural-charts/core/package.json'))).version, extraction: 'Pure example specifications/settings only; no Native component or precomputed scene is shipped', families: Object.keys(data.capabilities).length, variants: data.examples.length };
+fs.mkdirSync(path.join(root, 'examples'), { recursive: true });
+fs.writeFileSync(path.join(root, 'examples/native-recipes.json'), JSON.stringify(data, null, 2) + '\n');
+fs.writeFileSync(path.join(root, 'src/capabilities.ts'), capabilitySource(data.capabilities));
+fs.writeFileSync(path.join(root, 'docs/native-baseline.json'), JSON.stringify(provenance, null, 2) + '\n');
+console.log(JSON.stringify({ families: provenance.families, variants: provenance.variants, sourceHead: head, core: provenance.core }));

@@ -1,0 +1,234 @@
+{
+  "sourceRepository": "neural-charts-native",
+  "sourceHead": "37c6916241e18ff8c4709a125218e738c3aff4e8",
+  "sourceFiles": [
+    {
+      "file": "src/showcase/panel-examples.ts",
+      "sha256": "0af68b069022a05402ba2e55101a96cf80585e9c92355705bb8ddd9bd9d8e778"
+    },
+    {
+      "file": "src/showcase/mixed-range-examples.ts",
+      "sha256": "aa24d8a5ef2db6267c5f64fa0fc76b6487ad6b4f45679ff1bd272bf66ba1fd34"
+    },
+    {
+      "file": "src/showcase/circular-examples.ts",
+      "sha256": "250732cd0c6dff1d0dea66741349ee7a6f52649b1bfd2af7b58a6360176e6966"
+    },
+    {
+      "file": "src/showcase/composition-examples.ts",
+      "sha256": "f7f42ebef0de45775c235807c6d89fe275f413100ecd7d8b176ea8c84bae73b3"
+    },
+    {
+      "file": "src/showcase/uncertainty-examples.ts",
+      "sha256": "2966f9f9603d183f70b66e7bc1fe6bfca8fb37cf1ce746e5a84a9aeedc088450"
+    },
+    {
+      "file": "src/showcase/uncertainty-catalog.ts",
+      "sha256": "f69ce543d6813af7029bfedd72c6a078e157b497daa25097a4f1b0913cfb7e45"
+    },
+    {
+      "file": "src/showcase/profile-examples.ts",
+      "sha256": "d3a064bfb1a8d8a755313a69c69f873f43c557a6565d284ea9f707dac79a3e1b"
+    },
+    {
+      "file": "src/showcase/profile-catalog.ts",
+      "sha256": "07ef13bbd532c66f7772c60a8997758200d8cff396b11de701a514d1b60ff412"
+    },
+    {
+      "file": "src/showcase/dendrogram-examples.ts",
+      "sha256": "82b03050b4572ff85f2fbf9879b01455ae23c46ef2c84f178d1954a57504666a"
+    },
+    {
+      "file": "src/showcase/dendrogram-catalog.ts",
+      "sha256": "5d3515437b24b0e546c256cc7a21075eab5334e5826681edd8900a86da9c5355"
+    },
+    {
+      "file": "src/showcase/parallel-examples.ts",
+      "sha256": "f944b442d11070219614ccc3fa01b5c13cfcf98a5f8878e1aa7856d7fe16c471"
+    },
+    {
+      "file": "src/showcase/parallel-catalog.ts",
+      "sha256": "2aa968f193d973096e4178418f69832a453e13ae70abd946be37b054ad20e7c2"
+    },
+    {
+      "file": "src/showcase/circular-bars-examples.ts",
+      "sha256": "7d59c546507a3a2b5170cd4e876082e715c0f97c55f6612fadecd698270ce395"
+    },
+    {
+      "file": "src/showcase/circular-bars-catalog.ts",
+      "sha256": "8bd6455ce0f43e694afc1434dab3d8d1c80815862026914103ed88d6de7cd569"
+    },
+    {
+      "file": "src/showcase/heatmap-examples.ts",
+      "sha256": "e9d3cef2459c477179fa8f837d2bea30cb9e0e17bdb73a2fcf2f25c18ae88c0d"
+    },
+    {
+      "file": "src/showcase/tilemap-examples.ts",
+      "sha256": "e1c42aaab4e5700e4b4a6aa4bff544459f22521658dadc2ab4ffd8dc3c04f981"
+    },
+    {
+      "file": "src/showcase/heatmap-catalog.ts",
+      "sha256": "8cd419a562245a30ad4e06712501e50d5afacaeb1806496f6db6602ef0a0bbfb"
+    },
+    {
+      "file": "src/showcase/venn-examples.ts",
+      "sha256": "763825c102093f59256d5e55917f591f01e97d449468ede7ab6499123813a3d2"
+    },
+    {
+      "file": "src/showcase/pictorial-examples.ts",
+      "sha256": "c81165b1906ec57920d4039dc54cd8b9bf1939159cb2a6c9e5437adef8b83639"
+    },
+    {
+      "file": "src/showcase/pictorial-catalog.ts",
+      "sha256": "a7b11be27b8f6246b727e8b975add60f32d1fd5745c0976c5532fb224134bd58"
+    },
+    {
+      "file": "src/showcase/tilemap-catalog.ts",
+      "sha256": "2d20594121e202e94792eb94b446e16bae7029d021ec4607f32a5061e3e4526b"
+    },
+    {
+      "file": "src/showcase/wordcloud-layout.ts",
+      "sha256": "82fcf2b3f5ac9724ec2e4da8d39eacd96568e23e30422ecc0a9b658e2c56953f"
+    },
+    {
+      "file": "src/showcase/wordcloud-examples.ts",
+      "sha256": "f2085fe04192e36626f5712ea2770a36add4cb53e8615e659667e96b186bb03e"
+    },
+    {
+      "file": "src/showcase/contour-examples.ts",
+      "sha256": "239998c9fed626c9145f90efdf63691f3bf52baf3bb070bac8e5defa9f6b7569"
+    },
+    {
+      "file": "src/showcase/relationship-examples.ts",
+      "sha256": "d3064aeab100c9d6691a425ec5176acc92c0a0b4c44618d18fb23b7a1f25ef09"
+    },
+    {
+      "file": "src/showcase/comparison-examples.ts",
+      "sha256": "ccaf8ae40aa9b186e6060ebca675a9ace3fcd932fb361f203cdf1411f140eb87"
+    },
+    {
+      "file": "src/showcase/interval-examples.ts",
+      "sha256": "177878cb2d7e6149cc87396309116af3d5b6f7951892d41fc50808b4d1a929a5"
+    },
+    {
+      "file": "src/showcase/sankey-examples.ts",
+      "sha256": "0b2ba25b2771e81edcaf371047853fa99c57453c939eeded59e1dba1c768bcb2"
+    },
+    {
+      "file": "src/showcase/directional-examples.ts",
+      "sha256": "653b013d829e820ef2bdc633dca140fea14181d88791020309413e08c64ca60a"
+    },
+    {
+      "file": "src/showcase/network-packing-examples.ts",
+      "sha256": "1f60b13dde707b0c69c451aff87514598251ce15341838b2c088cd83f23bd286"
+    },
+    {
+      "file": "src/showcase/dataset.ts",
+      "sha256": "eb14cc9c9747222fe38dee6fbc2b6f2d3a61ececfd320c77edd8f0944f3fb1ff"
+    },
+    {
+      "file": "src/showcase/live-examples.ts",
+      "sha256": "f35af916462563e4856d43e35ed2a87368276644b5996bdf1b7f54b7d5d113fa"
+    },
+    {
+      "file": "src/library/chart-capabilities.ts",
+      "sha256": "bb489c0455d47f959b351ff98235674006d881e85190f9de453b073dcea6fb32"
+    },
+    {
+      "file": "src/showcase/contracts.generated.ts",
+      "sha256": "33ac4534384751be98caf6d5e77337bf3e23478600ef1e2af4bc748c8daa0876"
+    },
+    {
+      "file": "src/showcase/mixed-range-api.ts",
+      "sha256": "4b3ca8daab2f7747bb08fbf4513c1ff72bbda29b081c1bd555eb0145bdeee414"
+    },
+    {
+      "file": "src/showcase/circular-api.ts",
+      "sha256": "fea5678738b7493a0bdd84a1f9a55d6d7fbc009cf627966d0f90ae59a07a99f0"
+    },
+    {
+      "file": "src/showcase/composition-api.ts",
+      "sha256": "64b527520192ed391e590aaa7833b28f9c72c1533c317a1746ad959409ec8121"
+    },
+    {
+      "file": "src/showcase/uncertainty-api.ts",
+      "sha256": "bf58395f3d1ecb05b2bb1c781f600b41edf668077f940674f435b5472cad7b4c"
+    },
+    {
+      "file": "src/showcase/profile-api.ts",
+      "sha256": "ef2680c56767f1b6f17338ccb38a6bad2cdcee2adcd053a664c07f35000befb2"
+    },
+    {
+      "file": "src/showcase/dendrogram-api.ts",
+      "sha256": "03d6301932765c37669011947f6896faddb490c7bb3aa3726ad258fd528d9e40"
+    },
+    {
+      "file": "src/showcase/contour-api.ts",
+      "sha256": "0986d9af88558fd4223a4f6fbe60f96832fede84ee9744a011647174ed327ec5"
+    },
+    {
+      "file": "src/showcase/venn-api.ts",
+      "sha256": "559257e7cd07c76cf7fee94a90407949858e89e5a9a8cac917d11852924600df"
+    },
+    {
+      "file": "src/showcase/parallel-api.ts",
+      "sha256": "0cac137f734954ec42e0a45edf3d2f17cf0df191ae0d035580baafe20c270be2"
+    },
+    {
+      "file": "src/showcase/circular-bars-api.ts",
+      "sha256": "436399977b33cac0046dc3e1a87a9faa013e1555c29dabb403c4d4fb5a314e9d"
+    },
+    {
+      "file": "src/showcase/heatmap-api.ts",
+      "sha256": "e98f020bf96790d603d7522b03d6f905512b649cf61631b8f2712a110951fd24"
+    },
+    {
+      "file": "src/showcase/pictorial-api.ts",
+      "sha256": "e8bdd7b1f558ee9a895ce8230b89b5cf624393d9c78127728880d85f4c786f0e"
+    },
+    {
+      "file": "src/showcase/tilemap-api.ts",
+      "sha256": "fea6b6bc942021d1a6ca588ec786a2a653d2ad0c4b2e390a0e6ac96500dacd84"
+    },
+    {
+      "file": "src/showcase/wordcloud-api.ts",
+      "sha256": "0419c89c135c01dc669fc890c3e215e8ed276ab2c532c98cee887c695b82da3f"
+    },
+    {
+      "file": "src/showcase/relationship-api.ts",
+      "sha256": "505869bd149d01100a74d86b94c5fd1c1a43d10b17feeaaba57722c2a4f5de61"
+    },
+    {
+      "file": "src/showcase/contour-layout.ts",
+      "sha256": "16cea27a40261e3ee46bd3895dbf1bf2bc468ef15c8433f07178c2bae21a4f5c"
+    },
+    {
+      "file": "src/showcase/grouped-options.ts",
+      "sha256": "36d57fdf31ff6220660571a5b0690c6c0fe54689c47b4fa45543f0ecdd9c0e31"
+    },
+    {
+      "file": "src/showcase/data-documentation.ts",
+      "sha256": "b5f658b00ba50b1321434c0f71acfcdec88deb153297fb8e3dc74a6e1289f9a5"
+    },
+    {
+      "file": "src/showcase/grouped-api-reference.ts",
+      "sha256": "8a6c8a3377a155b1b0058786765171c0dad88217345c4f2ddd9e1b6f483820b3"
+    },
+    {
+      "file": "src/showcase/package-versions.generated.ts",
+      "sha256": "fb9a17d9110981ed4867f1333353f9feca3291c565fe5a76820e2ae7fa2b3e3f"
+    },
+    {
+      "file": "src/showcase/catalog-roadmap.ts",
+      "sha256": "47842da179a5774b6488b6d4bf9a6ad5796186b77839bcf39446912737c60558"
+    },
+    {
+      "file": "src/showcase/showcase-content.ts",
+      "sha256": "1b2bed47e23da13a854b8f2502cf7ba0601c5728563927e42b046f3e6adf32b0"
+    }
+  ],
+  "core": "0.0.23",
+  "extraction": "Pure example specifications/settings only; no Native component or precomputed scene is shipped",
+  "families": 62,
+  "variants": 319
+}

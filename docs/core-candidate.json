@@ -1,0 +1,7 @@
+{
+  "version": "0.1.5",
+  "archive": "vendor/neural-charts-core-0.1.5-19f95de32acd.tgz",
+  "sha256": "19f95de32acdf145960e33bce56037c4d7f77cd83cc9bc0dfb095f4e7a8aac57",
+  "published": false,
+  "validated": "Isolated dense numeric point validation."
+}

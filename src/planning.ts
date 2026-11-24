@@ -28,16 +28,19 @@ const ownedFrames = new WeakSet<object>();
 // graphs completely constructed by this copier qualify for tree-walk reuse.
 // Store coarse roots/arrays only, not another weak entry for every datum.
 const detachedInputs = new WeakSet<object>();
+// These arrays contain only detached records with the three standard XY fields.
+const simplePointArrays = new WeakSet<object>();
 // Only snapshot-owned, deeply immutable roots enter this cache. Presentation
 // validation is independent of options; Core/capacity validation still runs.
 const presentationCheckedData = new WeakSet<object>();
 export function snapshot<T>(input: T, allowUndefined = false, previous?: T): T {
   const active = new Set<object>(); let count = 0;
   const limit = allowUndefined ? 2000000 : 250000;
-  let lastDetached=true;
+  let lastDetached=true, lastSimplePoint=false;
   const owned = allowUndefined ? ownedFrames : ownedInputs;
-  function copy(value: unknown, depth: number, prior?: unknown, priorDetached=false,priorOwned=false): unknown {
+  function copy(value: unknown, depth: number, prior?: unknown, priorDetached=false,priorOwned=false,priorSimplePoint=false): unknown {
     lastDetached=true;
+    lastSimplePoint=false;
     if (++count > limit || depth > 64) throw Error('INPUT_LIMIT');
     if (typeof value === 'number' && !Number.isFinite(value)) throw Error('INVALID_NUMBER');
     if (value === undefined && !allowUndefined) throw Error('EXPLICIT_UNDEFINED');
@@ -47,10 +50,74 @@ export function snapshot<T>(input: T, allowUndefined = false, previous?: T): T {
     // still charge all nodes/depth, otherwise repeating an owned fragment could
     // bypass limits (for example in a table-only consumer).
     if (depth === 0 && owned.has(value)) { lastDetached=detachedInputs.has(value); return value; }
-    const array = Array.isArray(value), proto = Object.getPrototypeOf(value);
-    if (!array && proto !== Object.prototype && proto !== null) throw Error('PLAIN_DATA_REQUIRED');
+    const array = Array.isArray(value);
+    if (!array) {
+      const proto = Object.getPrototypeOf(value);
+      if (proto !== Object.prototype && proto !== null) throw Error('PLAIN_DATA_REQUIRED');
+    }
+    if (array && !allowUndefined && simplePointArrays.has(value)) {
+      count += value.length * 4;
+      if (count > limit || depth + 2 > 64) throw Error('INPUT_LIMIT');
+      return value;
+    }
     const keys = Reflect.ownKeys(value);
+    if (!allowUndefined && !array && keys.length === 3 && keys[0] === 'id' && keys[1] === 'x' && keys[2] === 'y' &&
+        (priorSimplePoint || !Object.isFrozen(value))) {
+      const id = Object.getOwnPropertyDescriptor(value, 'id');
+      const x = Object.getOwnPropertyDescriptor(value, 'x');
+      const y = Object.getOwnPropertyDescriptor(value, 'y');
+      if (id?.enumerable && typeof id.value === 'string' && x?.enumerable &&
+          (typeof x.value === 'string' || Number.isFinite(x.value)) && y?.enumerable &&
+          (y.value === null || Number.isFinite(y.value))) {
+        count += 3;
+        if (count > limit || depth === 64) throw Error('INPUT_LIMIT');
+        const previousPoint = priorDetached && prior && typeof prior === 'object' && !Array.isArray(prior)
+          ? prior as {id?: string; x?: unknown; y?: unknown} : undefined;
+        lastSimplePoint=true;
+        if (previousPoint?.id === id.value && previousPoint.x === x.value && previousPoint.y === y.value &&
+            (priorSimplePoint || Object.keys(previousPoint).length === 3)) return previousPoint;
+        return Object.freeze({id: id.value, x: x.value, y: y.value});
+      }
+    }
     if (array && !allowUndefined && (value.length > 250000 || keys.length !== value.length + 1)) throw Error('INPUT_LIMIT');
+    // A proxy may report a different order from an ordinary array. Use the
+    // dense path only when every reported property is in canonical order.
+    if (array && !allowUndefined && keys.length > 1 && !Object.isFrozen(value) &&
+        keys.every((key, index) => key === (index === keys.length - 1 ? 'length' : String(index)))) {
+      const length = keys.length - 1;
+      keys.pop();
+      const previousArray = priorDetached && Array.isArray(prior) && prior.length === length ? prior : undefined;
+      const previousPoints = previousArray !== undefined && simplePointArrays.has(previousArray);
+      active.add(value);
+      let detached = true, simplePoints = true;
+      const copyAt = (index: number): unknown => {
+        const descriptor = Object.getOwnPropertyDescriptor(value, keys[index]!)!;
+        if (!hasOwn(descriptor, 'value') || !descriptor.enumerable) throw Error('ACCESSOR_NOT_ALLOWED');
+        const item = copy(descriptor.value, depth + 1, previousArray?.[index], !!previousArray, !!previousArray, previousPoints);
+        detached &&= lastDetached;
+        simplePoints &&= lastSimplePoint;
+        return item;
+      };
+      let out: unknown[] | undefined;
+      if (previousArray) {
+        for (let index = 0; index < length; index++) {
+          const item = copyAt(index);
+          if (item === previousArray[index]) continue;
+          out = keys.map((_, at) => at < index ? previousArray[at] : at === index ? item : copyAt(at));
+          break;
+        }
+      } else {
+        out = keys.map((_, index) => copyAt(index));
+      }
+      active.delete(value);
+      const result = out ? Object.freeze(out) : previousArray!;
+      if (depth === 0) owned.add(result);
+      if (detached) detachedInputs.add(result);
+      if (simplePoints) simplePointArrays.add(result);
+      lastDetached = detached;
+      lastSimplePoint = false;
+      return result;
+    }
     const reusable = prior !== null && typeof prior === 'object' && priorOwned && Array.isArray(prior) === array &&
       (priorDetached ? array ? (prior as unknown[]).length + 1 : Object.keys(prior).length : Reflect.ownKeys(prior).length) === keys.length;
     const candidate = reusable ? prior : Object.isFrozen(value) ? value : undefined;
@@ -88,7 +155,8 @@ export function snapshot<T>(input: T, allowUndefined = false, previous?: T): T {
       }
       if (out) Object.defineProperty(out, key, { enumerable: true, value: child });
     }
-    active.delete(value); if (!out) { if(depth===0)owned.add(candidate as object);lastDetached=candidateDetached;return candidate; }
+    active.delete(value); lastSimplePoint=false;
+    if (!out) { if(depth===0)owned.add(candidate as object);lastDetached=candidateDetached;return candidate; }
     const result = Object.freeze(out);if(depth===0)owned.add(result);lastDetached=detached;
     if(!allowUndefined&&detached&&(depth===0||array))detachedInputs.add(result);return result;
   }
@@ -312,23 +380,31 @@ export function validateOptions(options: ChartOptions, partialNumberFormats=fals
       const x = object(a[key], ['visible', 'title', 'numberFormat', 'labels', 'titleStyle']); strings(x, ['title']); booleans(x, ['visible']);
       if (hasOwn(x, 'titleStyle')) validateTextStyle(x.titleStyle);
       if (hasOwn(x, 'numberFormat')) validateNumberFormat(x.numberFormat, partialNumberFormats);
-      if (hasOwn(x, 'labels')) { const l = object(x.labels, ['maxLines', 'maxCharacters', 'rotation', 'layout']);
+      if (hasOwn(x, 'labels')) { const l = object(x.labels, ['maxLines', 'maxCharacters', 'rotation', 'layout', 'style']);
+        if (hasOwn(l, 'style')) {
+          const style = object(l.style, ['fontSize', 'fontWeight', 'color']);
+          validateTextStyle(style);
+          checkRange(style.fontSize, 8, 24);
+        }
         checkOption(l.layout, labelLayouts, 'INVALID_AXIS_LABEL_LAYOUT');
         if (l.maxLines !== undefined && (![1, 2, 3].includes(Number(l.maxLines)) || typeof l.maxLines !== 'number')) throw Error('INVALID_LABEL_LINES');
         checkInteger(l.maxCharacters, 3, 80, 'INVALID_LABEL_CHARACTERS');
         checkRange(l.rotation, -90, 90);
       }
     } }
-    if (o.legend) { const l = object(o.legend, ['visible', 'position', 'interactive', 'reverse', 'maxLabelCharacters', 'itemSpacing']); booleans(l, ['visible', 'interactive', 'reverse']); checkLegacyChoice(l.position, ['top', 'bottom', 'left', 'right'], 'INVALID_LEGEND_POSITION');
+    if (o.legend) { const l = object(o.legend, ['visible', 'position', 'interactive', 'reverse', 'maxLabelCharacters', 'itemSpacing', 'maxHeight']); booleans(l, ['visible', 'interactive', 'reverse']); checkLegacyChoice(l.position, ['top', 'bottom', 'left', 'right'], 'INVALID_LEGEND_POSITION');
       checkInteger(l.maxLabelCharacters, 3, 256, 'INVALID_LEGEND_LABEL_LIMIT');
       checkRange(l.itemSpacing, 0, 32);
+      checkRange(l.maxHeight, 48, 1200);
     }
     if (o.tooltip) {
-      const t = object(o.tooltip, ['enabled', 'content', 'placement', 'crosshair', 'pinnable', 'background', 'foreground']);
+      const t = object(o.tooltip, ['enabled', 'content', 'placement', 'crosshair', 'pinnable', 'background', 'foreground', 'maxWidth', 'maxHeight']);
+      checkRange(t.maxWidth, 48, 1200);
+      checkRange(t.maxHeight, 40, 1200);
       for (const key of ['background', 'foreground']) checkPaint(t[key]);
       booleans(t, ['enabled', 'crosshair', 'pinnable']);
       checkLegacyChoice(t.content, ['point', 'shared'], 'INVALID_TOOLTIP_CONTENT');
-      checkLegacyChoice(t.placement, ['auto', 'docked'], 'INVALID_TOOLTIP_PLACEMENT');
+      checkLegacyChoice(t.placement, ['auto', 'docked', 'below'], 'INVALID_TOOLTIP_PLACEMENT');
     }
     if (o.viewport) {
       const v = object(o.viewport, ['axes', 'value', 'controls', 'zoom', 'pan', 'pinch', 'wheel']);
@@ -400,6 +476,7 @@ export function planWith(planner: ChartPlanner, data: ChartData, options: ChartO
     if (!presentationCheckedData.has(safe)) {
       const path = ['data'];
       function check(value: object): void {
+        if (simplePointArrays.has(value)) return;
         const axis = path.length === 3 && path[1] === 'axes' && !path[2]!.includes('.');
         for (const key of Object.keys(value)) {
           if (key === 'color' || key === 'datum' || key === 'markers' || key === 'dash' ||
@@ -471,8 +548,12 @@ if (layout) {
     const result = planner(plan as unknown as PlanSpec, calculation, ports);
     if (result.status === 'invalid') return result;
     let frame = result.frame;
-    if (type === 'pareto' && o.locale === 'es') {
+    const implicitGraphGroup = o.locale === 'es' && graphGroupData(safe) &&
+      !safe.groups?.some(group => group.id === 'nodes') &&
+      frame.legend.some(group => group.id === 'nodes');
+    if (o.locale === 'es' && (type === 'pareto' || implicitGraphGroup)) {
       const translate = (id: string, name: string): string =>
+        implicitGraphGroup ? (id === 'nodes' && name === 'Nodes' ? 'Nodos' : name) :
         id === 'values' && name === 'Values' ? 'Valores' :
         id === 'cumulative' && name === 'Cumulative' ? 'Acumulado' : name;
       const translateSeries = <T extends { readonly id: string; readonly name: string }>(item: T): T =>
@@ -488,4 +569,8 @@ if (layout) {
     }
     return { status: 'ok', value: o.unit === undefined ? frame : Object.freeze({ ...frame, unit: o.unit }) };
   } catch (e) { return invalid(e instanceof Error ? e.message : 'INVALID_DATA', 'data'); }
+}
+
+export function graphGroupData(data: ChartData): data is Extract<ChartData, {type: 'treegraph' | 'organization' | 'networkgraph'}> {
+  return data.type === 'treegraph' || data.type === 'organization' || data.type === 'networkgraph';
 }
