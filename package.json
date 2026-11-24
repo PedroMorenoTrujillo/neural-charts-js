@@ -1,6 +1,6 @@
 {
   "name": "@neural-charts/web",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -44,7 +44,7 @@
     }
   },
   "dependencies": {
-    "@neural-charts/core": "0.1.4"
+    "@neural-charts/core": "0.1.5"
   },
   "devDependencies": {
     "typescript": "5.9.3"
