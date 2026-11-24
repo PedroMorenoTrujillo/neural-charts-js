@@ -1,3 +1,25 @@
+const financialComponentNames: Readonly<Record<string, readonly [string, string]>> = {
+  conversion: ['Conversion line', 'Línea de conversión'],
+  base: ['Base line', 'Línea base'],
+  spanA: ['Leading span A', 'Proyección A'],
+  spanB: ['Leading span B', 'Proyección B'],
+  lagging: ['Lagging span', 'Línea atrasada'],
+  pivot: ['Pivot', 'Pivote'],
+  r1: ['Resistance 1', 'Resistencia 1'],
+  r2: ['Resistance 2', 'Resistencia 2'],
+  r3: ['Resistance 3', 'Resistencia 3'],
+  s1: ['Support 1', 'Soporte 1'],
+  s2: ['Support 2', 'Soporte 2'],
+  s3: ['Support 3', 'Soporte 3'],
+  psar: ['Parabolic SAR', 'SAR parabólico'],
+  supertrend: ['Supertrend', 'Supertrend'],
+  zigzag: ['Turning point', 'Punto de giro'],
+};
+
+export function financialComponentLabel(key: string, locale: 'es' | 'en' | undefined): string {
+  return Object.hasOwn(financialComponentNames, key) ? financialComponentNames[key]![locale === 'es' ? 1 : 0] : key;
+}
+
 const translations = {
   pin: ["Pin detail","Fijar detalle"],
   unpin: ["Unpin detail","Desfijar detalle"],

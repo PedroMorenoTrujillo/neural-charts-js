@@ -2,20 +2,21 @@ import { transformPlanViewport, preparePlanRegionHit } from '@neural-charts/core
 import type { PlanFrame, PlanObservation, PlanViewportIntent, PlanViewportState, PlanViewportValue } from '@neural-charts/core';
 import { ChartDownloadFormat, ChartDownloadMenuPosition, ChartToolbarAction, ChartZoomPosition } from './types.js';
 import type { ChartController, ChartData, ChartOptions, ChartMountOptions, ChartPointId, ChartResult } from './types.js';
-import { invalid, planWith, snapshot, validateOptions, type ChartPlanner } from './planning.js';
+import { graphGroupData, invalid, planWith, snapshot, validateOptions, type ChartPlanner } from './planning.js';
 import { chartSvg, hasSideLegend, plotBounds, plotSize, pathData, svgNamespace, parallelPlotWidth } from './svg.js';
 import type {SvgPathResources} from './svg.js';
 import { samePoint, pointKey, pointKeyParts } from './identity.js';
 import { describeChartData } from './table.js';
 import { measureBrowserWords } from './browser-text.js';
 import { isCartesianFamily } from './capabilities.js';
-import { dateFormatter, displayNumber, formatTimeDuration, valueFormatter } from './format.js';
+import { dateFormatter, displayNumber, formatTimeDuration, numberFormatter, valueFormatter } from './format.js';
 import {resolveResponsive} from './responsive.js';
 import {pointColors, pointStyleError, seriesStyles} from './series-style.js';
 import {serializeChartExport} from './export-layout.js';
 import { themeTokens } from './theme.js';
 import { headingStyle, systemFontFamily } from './text-style.js';
-import { messages } from './locale.js';
+import { componentDash, visibleComponentLines } from './component-lines.js';
+import { financialComponentLabel, messages } from './locale.js';
 import { coreVersion } from './core-version.js';
 import { detailPosition } from './tooltip.js';
 import { exportChartCsv, rasterizeChartSvg } from './export.js';
@@ -313,19 +314,11 @@ export function createChartWithPlanner(planner: ChartPlanner, host: HTMLElement,
     const label = financial && options.formatting?.date && 'axes' in data && data.axes && 'x' in data.axes && data.axes.x.type === 'time' &&
       o.xValue !== undefined && Math.abs(o.xValue) <= 8.64e15 && o.label === new Date(o.xValue).toISOString()
       ? dateFormatter(options)(o.xValue) : o.label;
-    // Volume is original quantity metadata, not a price on the monetary axis.
-    let financialDetail = '';
-    if (financial) {
-      const format = valueFormatter(options, o.valueAxis);
-      for (const field of ['open', 'high', 'low', 'close'] as const) financialDetail += measurement(labels[field], financial[field], format);
-      if (financial.volume !== undefined) financialDetail += measurement(labels.volume, financial.volume, displayNumber);
-      for (const [name, value] of Object.entries(financial.components ?? {})) financialDetail += measurement(name, value, format);
-    }
     const selected = selection.some(id => samePoint(id, o.id));
-    const text = rows ? label + '\n' + rows.map(row => row.name + ': ' + (row.point ? pointMeasurements(row.point) : labels.missing)).join('\n')
-      : observationText(o, label) + (o.percentage !== undefined ? ' (' + displayNumber(o.percentage) + '%)' : '') + (selected ? ' · ' + labels.selected : '');
-    const context:ChartTooltipContext|undefined=content?.tooltip?Object.freeze({family:frame.family,locale:options.locale??'en',defaultText:text+financialDetail,observation:o,points:Object.freeze(peers?[...peers]:[o]),...(rows ? {rows: Object.freeze(rows.map(row => Object.freeze(row)))} : {}),selected}):undefined;
-    const portable=context?contentText(content,'tooltip',context):text+financialDetail;
+    const text = rows ? label + '\n' + rows.map(row => row.name + ': ' + (row.point ? pointMeasurements(row.point) + financialMeasurements(row.point) : labels.missing)).join('\n')
+      : observationText(o, label) + (o.percentage !== undefined ? ' (' + displayNumber(o.percentage) + '%)' : '') + (selected ? ' · ' + labels.selected : '') + financialMeasurements(o);
+    const context:ChartTooltipContext|undefined=content?.tooltip?Object.freeze({family:frame.family,locale:options.locale??'en',defaultText:text,observation:o,points:Object.freeze(peers?[...peers]:[o]),...(rows ? {rows: Object.freeze(rows.map(row => Object.freeze(row)))} : {}),selected}):undefined;
+    const portable=context?contentText(content,'tooltip',context):text;
     if(destroyed)return;
     renderContent(detail,'tooltip',detail.hidden?undefined:context,portable,context&&revision+':'+pointKey(o.id)+':'+context.selected);
     if(destroyed)return;
@@ -339,6 +332,22 @@ export function createChartWithPlanner(planner: ChartPlanner, host: HTMLElement,
     if (!detail.hidden) placeDetail(o);
   }
   function placeDetail(o: PlanObservation): void {
+    const tooltip = options.tooltip;
+    const below = tooltip?.placement === 'below';
+    detail.style.position = below ? 'relative' : 'absolute';
+    detail.style.marginBlockStart = below ? '8px' : '';
+    if (below) {
+      detail.style.left = '';
+      detail.style.top = '';
+      detail.style.visibility = '';
+      detail.style.padding = '6px 8px';
+      detail.style.maxWidth = tooltip?.maxWidth === undefined ? '100%' : `min(100%, ${tooltip.maxWidth}px)`;
+      detail.style.maxHeight = tooltip?.maxHeight === undefined ? '12rem' : tooltip.maxHeight + 'px';
+      detail.style.pointerEvents = 'auto';
+      if (pinned || detail.scrollHeight > detail.clientHeight) detail.tabIndex = 0;
+      else detail.removeAttribute('tabindex');
+      return;
+    }
     const box = plotElement()?.getBoundingClientRect();
     if (!box?.width || !box.height) { detail.style.visibility = 'hidden'; return; }
     const outer = root.getBoundingClientRect(), visible = drawing.getBoundingClientRect();
@@ -363,9 +372,9 @@ export function createChartWithPlanner(planner: ChartPlanner, host: HTMLElement,
     const width = plot.right - plot.left, height = plot.bottom - plot.top;
     if (width <= 0 || height <= 0) { detail.style.visibility = 'hidden'; return; }
     detail.style.visibility = '';
-    detail.style.maxWidth = Math.min(320, width) + 'px';
+    detail.style.maxWidth = Math.min(tooltip?.maxWidth ?? 320, width) + 'px';
     detail.style.padding = width < 36 || height < 32 ? '0' : '6px 8px';
-    detail.style.maxHeight = height + 'px';
+    detail.style.maxHeight = Math.min(tooltip?.maxHeight ?? height, height) + 'px';
     const bounds = detail.getBoundingClientRect();
     const position = detailPosition(x + o.x * sx, y + o.y * sy, bounds.width, bounds.height, plot, options.tooltip?.placement === 'docked');
     const interactive = pinned || position.height < bounds.height || detail.scrollHeight > detail.clientHeight;
@@ -412,6 +421,18 @@ export function createChartWithPlanner(planner: ChartPlanner, host: HTMLElement,
     if (o.wind && o.wind.direction !== null) return value + measurement(labels.windDirection, displayNumber(o.wind.direction) + '°', displayNumber);
     if (o.contour) return value + '\n' + labels.samples + ': ' + o.contour.sourceValues.map(format).join(' · ');
     return value;
+  }
+  function financialMeasurements(observation: PlanObservation): string {
+    const financial = observation.financial;
+    if (!financial) return '';
+    const labels = messages(options.locale), format = valueFormatter(options, observation.valueAxis);
+    let detail = '';
+    for (const field of ['open', 'high', 'low', 'close'] as const) detail += measurement(labels[field], financial[field], format);
+    if (financial.volume !== undefined) {
+      detail += measurement(labels.volume, financial.volume, numberFormatter(options, {maximumFractionDigits: 3, useGrouping: true}));
+    }
+    for (const [name, value] of Object.entries(financial.components ?? {})) detail += measurement(financialComponentLabel(name, options.locale), value, format);
+    return detail;
   }
   function observationText(observation: PlanObservation, label = observation.label): string {
     if (observation.event) return observation.event.title + '\n' + pointMeasurements(observation);
@@ -479,6 +500,10 @@ export function createChartWithPlanner(planner: ChartPlanner, host: HTMLElement,
     const position = options.legend?.position ?? 'bottom', side = hasSideLegend(options, options.width ?? measureHost());
     chartArea.style.display = side ? 'grid' : 'block'; chartArea.style.gridTemplateColumns = side ? position === 'left' ? '150px minmax(0,1fr)' : 'minmax(0,1fr) 150px' : '';
     legend.style.flexDirection = side ? 'column' : 'row';
+    const legendHeight = options.legend?.maxHeight;
+    const scrollLegend = legendHeight !== undefined || frame.legend.length > 8;
+    legend.style.maxBlockSize = legendHeight !== undefined ? legendHeight + 'px' : scrollLegend ? '12rem' : '';
+    legend.style.overflowY = scrollLegend ? 'auto' : '';
     if (position === 'top' || side && position === 'left') chartArea.prepend(legend); else chartArea.append(legend);
     help.textContent = options.accessibility?.keyboard === false ? '' : labels.help;
     const heading=options.title??labels.chart,titleModel=content?.title?titleContext(frame,options.locale,options.title??frame.title):undefined,titleText=titleModel?contentText(content,'title',titleModel):heading;
@@ -517,9 +542,39 @@ export function createChartWithPlanner(planner: ChartPlanner, host: HTMLElement,
       if(!item.visible)b.style.textDecoration='line-through';
       const mark=element('span'),custom=styles.get(item.id);mark.textContent=(custom?.marker==='square'?'■':custom?.marker==='diamond'?'◆':custom?.marker==='triangle'?'▲':custom?.dash==='dotted'?'┈':custom?.dash==='dashed'?'┄':'━')+' ';mark.setAttribute('aria-hidden','true');mark.style.color=seriesColor(item.id,item.color);
       if(custom?.pattern&&custom.pattern!=='none'){mark.textContent='';mark.style.cssText='display:inline-block;width:14px;height:12px;margin-inline-end:5px;border:1px solid currentColor';mark.style.backgroundColor=custom.color??item.color;mark.style.backgroundImage=custom.pattern==='dots'?'radial-gradient(white 1px,transparent 1px)':custom.pattern==='crosshatch'?'repeating-linear-gradient(45deg,transparent 0 3px,white 3px 4px),repeating-linear-gradient(-45deg,transparent 0 3px,white 3px 4px)':'repeating-linear-gradient(135deg,transparent 0 3px,white 3px 4px)';mark.style.backgroundSize='8px 8px';}
+      if (!custom?.pattern && (frame.family === 'line' || frame.family === 'spline')) {
+        const index = frame.legend.indexOf(item);
+        mark.dataset.forcedSeries = String(index % 4);
+      }
       b.prepend(mark);legend.append(b);
     });
     if(destroyed)return;
+    const componentLines = options.legend?.visible !== false ? visibleComponentLines(frame) : [];
+    if (componentLines.length) {
+      const key = element('div', 'display:flex;flex-wrap:wrap;gap:6px 12px;flex-basis:100%;font-size:12px');
+      key.setAttribute('role', 'group');
+      key.setAttribute('aria-label', options.locale === 'es' ? 'Líneas de Ichimoku' : 'Ichimoku lines');
+      key.dataset.componentLegend = '';
+      for (const component of componentLines) {
+        const item = element('span', 'display:inline-flex;gap:6px;align-items:center');
+        item.dataset.component = component;
+        const swatch = doc.createElementNS(svgNamespace, 'svg');
+        swatch.setAttribute('width', '30');
+        swatch.setAttribute('height', '8');
+        swatch.setAttribute('viewBox', '0 0 30 8');
+        swatch.setAttribute('aria-hidden', 'true');
+        const line = doc.createElementNS(svgNamespace, 'path');
+        line.setAttribute('d', 'M0,4 H30');
+        line.setAttribute('stroke', 'currentColor');
+        line.setAttribute('stroke-width', '2');
+        const dash = componentDash(frame.family, component);
+        if (dash) line.setAttribute('stroke-dasharray', dash);
+        swatch.append(line);
+        item.append(swatch, financialComponentLabel(component, options.locale));
+        key.append(item);
+      }
+      legend.append(key);
+    }
     legend.style.gap=options.legend?.itemSpacing===undefined?'8px 16px':options.legend.itemSpacing+'px';
     paintToolbar(labels);
     scroll = frame.viewport && options.viewport?.pan !== false
@@ -575,7 +630,7 @@ export function createChartWithPlanner(planner: ChartPlanner, host: HTMLElement,
     const prepareFrame = (hiddenIds: readonly string[]) =>
       planWith(planner, next, o, dimensions, hiddenIds, { measureWords: requests => measureBrowserWords(doc, requests) });
     let h = o.hiddenSeriesIds ?? hidden; const describeGeometry = () => JSON.stringify([dimensions, o.layout, h, o.viewport, o.references, o.referenceBands, o.capacity,
-      o.scales, o.hierarchy, o.colorAxis, o.appearance?.centerName, o.appearance?.bandColors, next.type === 'pareto' && o.locale === 'es']);
+      o.scales, o.hierarchy, o.colorAxis, o.appearance?.centerName, o.appearance?.bandColors, (next.type === 'pareto' || graphGroupData(next)) && o.locale === 'es']);
     let geometry = describeGeometry();
     let result = next === data && geometry === lastGeometry ? { status: 'ok' as const, value: { ...frame, title: o.title ?? 'Chart', description: o.description ?? '', unit: o.unit ?? '' } } : prepareFrame(h);
     if (result.status === 'invalid' && o.hiddenSeriesIds === undefined && h.length) {

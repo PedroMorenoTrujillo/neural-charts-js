@@ -1,0 +1,779 @@
+{
+  "capabilities": {
+    "abands": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "ad": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "ao": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "apo": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "aroon": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "aroonoscillator": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "atr": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "bb": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "candlestick": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "cci": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "chaikin": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "cmf": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "cmo": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "dema": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "disparityindex": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "dmi": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "dpo": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "ema": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "flags": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "heikinashi": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "hlc": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "hollowcandlestick": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "ikh": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "keltnerchannels": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "klinger": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "linearregression": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "linearregressionangle": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "linearregressionintercept": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "linearregressionslope": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "macd": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "mfi": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "momentum": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "natr": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "obv": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "ohlc": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "pc": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "pivotpoints": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "pointandfigure": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "ppo": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "priceenvelopes": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "psar": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "renko": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "roc": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "rsi": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "slowstochastic": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "sma": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "stochastic": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "supertrend": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "tema": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "trendline": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "trix": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "vbp": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "vwap": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "williamsr": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "wma": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    },
+    "zigzag": {
+      "axes": "cartesian",
+      "viewport": "xy"
+    }
+  },
+  "familyCopy": {
+    "abands": {
+      "name": "Bandas de aceleración",
+      "description": "Calcula bandas de aceleración a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "ad": {
+      "name": "Acumulación y distribución",
+      "description": "Calcula acumulación y distribución a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "ao": {
+      "name": "Oscilador Awesome",
+      "description": "Calcula oscilador awesome a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "apo": {
+      "name": "Oscilador de precio absoluto",
+      "description": "Calcula oscilador de precio absoluto a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "aroon": {
+      "name": "Aroon",
+      "description": "Calcula aroon a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "aroonoscillator": {
+      "name": "Oscilador Aroon",
+      "description": "Calcula oscilador aroon a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "atr": {
+      "name": "Rango verdadero medio",
+      "description": "Calcula rango verdadero medio a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "bb": {
+      "name": "Bandas de Bollinger",
+      "description": "Calcula bandas de bollinger a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "candlestick": {
+      "name": "Velas",
+      "description": "Representa precios, rangos y eventos conservando los datos originales.",
+      "when": "Úsalo para estudiar la estructura de los precios o localizar eventos concretos. La tabla conserva apertura, máximo, mínimo, cierre y volumen."
+    },
+    "cci": {
+      "name": "Índice de canal de materias primas",
+      "description": "Calcula índice de canal de materias primas a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "chaikin": {
+      "name": "Oscilador Chaikin",
+      "description": "Calcula oscilador chaikin a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "cmf": {
+      "name": "Flujo monetario Chaikin",
+      "description": "Calcula flujo monetario chaikin a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "cmo": {
+      "name": "Oscilador de momento Chande",
+      "description": "Calcula oscilador de momento chande a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "dema": {
+      "name": "Media exponencial doble",
+      "description": "Calcula media exponencial doble a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "disparityindex": {
+      "name": "Índice de disparidad",
+      "description": "Calcula índice de disparidad a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "dmi": {
+      "name": "Movimiento direccional",
+      "description": "Calcula movimiento direccional a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "dpo": {
+      "name": "Oscilador de precio sin tendencia",
+      "description": "Calcula oscilador de precio sin tendencia a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "ema": {
+      "name": "Media móvil exponencial",
+      "description": "Calcula media móvil exponencial a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "flags": {
+      "name": "Eventos financieros",
+      "description": "Representa precios, rangos y eventos conservando los datos originales.",
+      "when": "Úsalo para estudiar la estructura de los precios o localizar eventos concretos. La tabla conserva apertura, máximo, mínimo, cierre y volumen."
+    },
+    "heikinashi": {
+      "name": "Heikin Ashi",
+      "description": "Representa precios, rangos y eventos conservando los datos originales.",
+      "when": "Úsalo para estudiar la estructura de los precios o localizar eventos concretos. La tabla conserva apertura, máximo, mínimo, cierre y volumen."
+    },
+    "hlc": {
+      "name": "Máximo, mínimo y cierre",
+      "description": "Representa precios, rangos y eventos conservando los datos originales.",
+      "when": "Úsalo para estudiar la estructura de los precios o localizar eventos concretos. La tabla conserva apertura, máximo, mínimo, cierre y volumen."
+    },
+    "hollowcandlestick": {
+      "name": "Velas huecas",
+      "description": "Representa precios, rangos y eventos conservando los datos originales.",
+      "when": "Úsalo para estudiar la estructura de los precios o localizar eventos concretos. La tabla conserva apertura, máximo, mínimo, cierre y volumen."
+    },
+    "ikh": {
+      "name": "Ichimoku",
+      "description": "Calcula ichimoku a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "keltnerchannels": {
+      "name": "Canales de Keltner",
+      "description": "Calcula canales de keltner a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "klinger": {
+      "name": "Oscilador Klinger",
+      "description": "Calcula oscilador klinger a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "linearregression": {
+      "name": "Regresión lineal móvil",
+      "description": "Calcula regresión lineal móvil a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "linearregressionangle": {
+      "name": "Ángulo de regresión",
+      "description": "Calcula ángulo de regresión a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "linearregressionintercept": {
+      "name": "Intercepto de regresión",
+      "description": "Calcula intercepto de regresión a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "linearregressionslope": {
+      "name": "Pendiente de regresión",
+      "description": "Calcula pendiente de regresión a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "macd": {
+      "name": "MACD",
+      "description": "Calcula macd a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "mfi": {
+      "name": "Índice de flujo monetario",
+      "description": "Calcula índice de flujo monetario a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "momentum": {
+      "name": "Momento",
+      "description": "Calcula momento a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "natr": {
+      "name": "Rango verdadero normalizado",
+      "description": "Calcula rango verdadero normalizado a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "obv": {
+      "name": "Volumen acumulado",
+      "description": "Calcula volumen acumulado a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "ohlc": {
+      "name": "Apertura, máximo, mínimo y cierre",
+      "description": "Representa precios, rangos y eventos conservando los datos originales.",
+      "when": "Úsalo para estudiar la estructura de los precios o localizar eventos concretos. La tabla conserva apertura, máximo, mínimo, cierre y volumen."
+    },
+    "pc": {
+      "name": "Canal de precios",
+      "description": "Calcula canal de precios a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "pivotpoints": {
+      "name": "Puntos pivote",
+      "description": "Calcula puntos pivote a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "pointandfigure": {
+      "name": "Punto y figura",
+      "description": "Representa precios, rangos y eventos conservando los datos originales.",
+      "when": "Úsalo para estudiar la estructura de los precios o localizar eventos concretos. La tabla conserva apertura, máximo, mínimo, cierre y volumen."
+    },
+    "ppo": {
+      "name": "Oscilador de precio porcentual",
+      "description": "Calcula oscilador de precio porcentual a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "priceenvelopes": {
+      "name": "Envolventes de precio",
+      "description": "Calcula envolventes de precio a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "psar": {
+      "name": "SAR parabólico",
+      "description": "Calcula sar parabólico a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "renko": {
+      "name": "Renko",
+      "description": "Representa precios, rangos y eventos conservando los datos originales.",
+      "when": "Úsalo para estudiar la estructura de los precios o localizar eventos concretos. La tabla conserva apertura, máximo, mínimo, cierre y volumen."
+    },
+    "roc": {
+      "name": "Tasa de cambio",
+      "description": "Calcula tasa de cambio a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "rsi": {
+      "name": "Índice de fuerza relativa",
+      "description": "Calcula índice de fuerza relativa a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "slowstochastic": {
+      "name": "Estocástico lento",
+      "description": "Calcula estocástico lento a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "sma": {
+      "name": "Media móvil simple",
+      "description": "Calcula media móvil simple a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "stochastic": {
+      "name": "Estocástico",
+      "description": "Calcula estocástico a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "supertrend": {
+      "name": "Supertendencia",
+      "description": "Calcula supertendencia a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "tema": {
+      "name": "Media exponencial triple",
+      "description": "Calcula media exponencial triple a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "trendline": {
+      "name": "Línea de tendencia",
+      "description": "Calcula línea de tendencia a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "trix": {
+      "name": "TRIX",
+      "description": "Calcula trix a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "vbp": {
+      "name": "Volumen por precio",
+      "description": "Representa precios, rangos y eventos conservando los datos originales.",
+      "when": "Úsalo para estudiar la estructura de los precios o localizar eventos concretos. La tabla conserva apertura, máximo, mínimo, cierre y volumen."
+    },
+    "vwap": {
+      "name": "Precio medio ponderado por volumen",
+      "description": "Calcula precio medio ponderado por volumen a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "williamsr": {
+      "name": "Williams %R",
+      "description": "Calcula williams %r a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "wma": {
+      "name": "Media móvil ponderada",
+      "description": "Calcula media móvil ponderada a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    },
+    "zigzag": {
+      "name": "Zigzag",
+      "description": "Calcula zigzag a partir de una serie OHLC y conserva sus valores fuente.",
+      "when": "Úsalo para explorar una medida derivada junto con sus parámetros explícitos. Los periodos iniciales sin datos suficientes se representan como ausentes."
+    }
+  },
+  "groups": [
+    {
+      "id": "financial-prices",
+      "title": "Precios y mercados",
+      "items": [
+        "candlestick",
+        "flags",
+        "heikinashi",
+        "hlc",
+        "hollowcandlestick",
+        "ohlc",
+        "pointandfigure",
+        "renko",
+        "vbp"
+      ]
+    },
+    {
+      "id": "financial-indicators",
+      "title": "Indicadores financieros",
+      "items": [
+        "abands",
+        "ad",
+        "ao",
+        "apo",
+        "aroon",
+        "aroonoscillator",
+        "atr",
+        "bb",
+        "cci",
+        "chaikin",
+        "cmf",
+        "cmo",
+        "dema",
+        "disparityindex",
+        "dmi",
+        "dpo",
+        "ema",
+        "ikh",
+        "keltnerchannels",
+        "klinger",
+        "linearregression",
+        "linearregressionangle",
+        "linearregressionintercept",
+        "linearregressionslope",
+        "macd",
+        "mfi",
+        "momentum",
+        "natr",
+        "obv",
+        "pc",
+        "pivotpoints",
+        "ppo",
+        "priceenvelopes",
+        "psar",
+        "roc",
+        "rsi",
+        "slowstochastic",
+        "sma",
+        "stochastic",
+        "supertrend",
+        "tema",
+        "trendline",
+        "trix",
+        "vwap",
+        "williamsr",
+        "wma",
+        "zigzag"
+      ]
+    }
+  ],
+  "parameters": {
+    "abands": [
+      "period"
+    ],
+    "ad": [],
+    "ao": [
+      "shortPeriod",
+      "longPeriod"
+    ],
+    "apo": [
+      "shortPeriod",
+      "longPeriod",
+      "index"
+    ],
+    "aroon": [
+      "period"
+    ],
+    "aroonoscillator": [
+      "period"
+    ],
+    "atr": [
+      "period"
+    ],
+    "bb": [
+      "period",
+      "deviation",
+      "index"
+    ],
+    "candlestick": [],
+    "cci": [
+      "period"
+    ],
+    "chaikin": [
+      "shortPeriod",
+      "longPeriod"
+    ],
+    "cmf": [
+      "period"
+    ],
+    "cmo": [
+      "period",
+      "index"
+    ],
+    "dema": [
+      "period",
+      "index"
+    ],
+    "disparityindex": [
+      "period",
+      "index"
+    ],
+    "dmi": [
+      "period"
+    ],
+    "dpo": [
+      "period",
+      "index"
+    ],
+    "ema": [
+      "period",
+      "index"
+    ],
+    "flags": [],
+    "heikinashi": [],
+    "hlc": [],
+    "hollowcandlestick": [],
+    "ikh": [
+      "period",
+      "shortPeriod",
+      "longPeriod"
+    ],
+    "keltnerchannels": [
+      "period",
+      "shortPeriod",
+      "multiplier",
+      "index"
+    ],
+    "klinger": [
+      "shortPeriod",
+      "longPeriod",
+      "signalPeriod"
+    ],
+    "linearregression": [
+      "period",
+      "index",
+      "xUnit"
+    ],
+    "linearregressionangle": [
+      "period",
+      "index",
+      "xUnit"
+    ],
+    "linearregressionintercept": [
+      "period",
+      "index",
+      "xUnit"
+    ],
+    "linearregressionslope": [
+      "period",
+      "index",
+      "xUnit"
+    ],
+    "macd": [
+      "shortPeriod",
+      "longPeriod",
+      "signalPeriod",
+      "index"
+    ],
+    "mfi": [
+      "period"
+    ],
+    "momentum": [
+      "period",
+      "index"
+    ],
+    "natr": [
+      "period"
+    ],
+    "obv": [],
+    "ohlc": [],
+    "pc": [
+      "period"
+    ],
+    "pivotpoints": [
+      "period"
+    ],
+    "pointandfigure": [
+      "boxSize",
+      "reversal"
+    ],
+    "ppo": [
+      "shortPeriod",
+      "longPeriod",
+      "index"
+    ],
+    "priceenvelopes": [
+      "period",
+      "deviation",
+      "index"
+    ],
+    "psar": [],
+    "renko": [
+      "boxSize"
+    ],
+    "roc": [
+      "period",
+      "index"
+    ],
+    "rsi": [
+      "period",
+      "index"
+    ],
+    "slowstochastic": [
+      "period",
+      "shortPeriod",
+      "signalPeriod"
+    ],
+    "sma": [
+      "period",
+      "index"
+    ],
+    "stochastic": [
+      "period",
+      "signalPeriod"
+    ],
+    "supertrend": [
+      "period",
+      "multiplier"
+    ],
+    "tema": [
+      "period",
+      "index"
+    ],
+    "trendline": [
+      "index",
+      "xUnit"
+    ],
+    "trix": [
+      "period",
+      "index"
+    ],
+    "vbp": [
+      "period"
+    ],
+    "vwap": [
+      "period"
+    ],
+    "williamsr": [
+      "period"
+    ],
+    "wma": [
+      "period",
+      "index"
+    ],
+    "zigzag": [
+      "threshold",
+      "index"
+    ]
+  }
+}

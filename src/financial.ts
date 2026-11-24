@@ -5,4 +5,6 @@ export type FinancialChartData=Extract<ChartData,{type:PlanFinancialSpec['family
 export function createFinancialChart(host:HTMLElement,data:FinancialChartData,options:ChartOptions,mount:ChartMountOptions){
   return createChartWithPlanner((spec,settings)=>planFinancialChart(spec as PlanFinancialSpec,settings),host,data,options,mount);
 }
+export {groupFinancialOhlc} from '@neural-charts/core/financial';
+export type {FinancialGroupingUnit, FinancialOhlcBucket} from '@neural-charts/core/financial';
 export type {ChartData,ChartOptions,ChartMountOptions,ChartController} from './types.js';

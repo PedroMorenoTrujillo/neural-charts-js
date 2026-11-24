@@ -1,24 +1,14 @@
 {
   "name": "@neural-charts/web",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/PedroMorenoTrujillo/neural-charts-js.git"
-  },
-  "homepage": "https://charts.neuralui.org/",
-  "bugs": {
-    "url": "https://github.com/PedroMorenoTrujillo/neural-charts-js/issues"
-  },
-  "engines": {
-    "node": ">=22.22.3"
-  },
   "type": "module",
   "sideEffects": false,
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "docs/WEB-API.md",
+    "docs/CUSTOM-CONTENT.md"
   ],
   "exports": {
     ".": {
@@ -43,13 +33,33 @@
       "import": "./dist/panels.js"
     }
   },
-  "dependencies": {
-    "@neural-charts/core": "0.1.4"
+  "engines": {
+    "node": ">=22.22.3"
   },
-  "devDependencies": {
-    "typescript": "5.9.3"
+  "dependencies": {
+    "@neural-charts/core": "0.1.5"
+  },
+  "homepage": "https://charts.neuralui.org/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PedroMorenoTrujillo/neural-charts-js.git"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json"
+    "prebuild": "node tooling/write-core-version.mjs",
+    "build": "tsc -p tsconfig.json",
+    "benchmark": "npm run build && node tooling/benchmark.mjs",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "verify": "npm test && node tooling/verify.mjs",
+    "pack:local": "npm run build && node tooling/pack-web.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "axe-core": "4.14.0",
+    "esbuild": "0.28.2",
+    "typescript": "5.9.3"
   }
 }

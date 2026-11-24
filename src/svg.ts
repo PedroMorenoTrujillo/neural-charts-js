@@ -5,6 +5,7 @@ import { samePoint, pointKey } from './identity.js';
 import { isCartesianFamily } from './capabilities.js';
 import { formatTimeDuration, numberFormatter, tickFormatter, valueFormatter } from './format.js';
 import { themeTokens } from './theme.js';
+import { componentDash } from './component-lines.js';
 import { axisLabelLines, axisLabelIndices } from './axis-labels.js';
 import { cellTextOnSurface, textColorOnSurface } from './text-contrast.js';
 import {observationBars, observationDetails, observationShape} from './observation-shape.js';
@@ -48,21 +49,26 @@ export function pathData(commands: readonly PlanCommand[]): string {
   return value;
 }
 export const plotInsets = (family: string, orientation?: 'horizontal' | 'vertical', options?: ChartOptions) => {
-  if (!isCartesianFamily(family)) return {left:0,right:0,top:0,bottom:family==='tilemap'?56:0};
+  if (!isCartesianFamily(family)) return {left:0,right:0,top:0,bottom:family==='tilemap'?(options?.colorAxis?.type==='classes'?84:56):0};
   const horizontal=family==='bar'||family==='vbp'||family==='bullet'&&orientation!=='vertical',valueFormat=options?.axes?.y?.numberFormat||(options?.layout?.stacking!=='percent'&&options?.formatting?.number),labels=horizontal?options?.axes?.y?.labels:options?.axes?.x?.labels,angle=Math.abs(labels?.rotation??0)*Math.PI/180;
   const rotated=angle?ceil(30+min(labels?.maxCharacters??11,options?.formatting?.date?18:11)*3.5*Math.sin(angle)+(labels?.maxLines??2)*13*Math.cos(angle)):0;
   const compact=valueFormat&&valueFormat.notation==='compact'&&valueFormat.minimumFractionDigits===0&&valueFormat.maximumFractionDigits===0&&valueFormat.currencyDisplay!=='name'&&valueFormat.unitDisplay!=='long'&&!options?.axes?.y?.title;
   const verticalTitle = horizontal ? options?.axes?.x?.titleStyle : options?.axes?.y?.titleStyle;
   const horizontalTitle = horizontal ? options?.axes?.y?.titleStyle : options?.axes?.x?.titleStyle;
-  const extraWidth = max(0, (verticalTitle?.fontSize ?? 12) - 12);
-  const extraHeight = max(0, (horizontalTitle?.fontSize ?? 12) - 12);
+  const verticalLabels = horizontal ? options?.axes?.x?.labels : options?.axes?.y?.labels;
+  const extraWidth = max(0, (verticalTitle?.fontSize ?? 12) - 12) + max(0, (verticalLabels?.style?.fontSize ?? 12) - 12) * 3;
+  const extraHeight = max(0, (horizontalTitle?.fontSize ?? 12) - 12) + max(0, (labels?.style?.fontSize ?? 12) - 12) * (labels?.maxLines ?? 2);
   const verticalAxis = horizontal ? options?.axes?.x : options?.axes?.y;
   const titleWidth = (horizontal || !valueFormat) && verticalAxis?.visible !== false && verticalAxis?.title ? 24 : 0;
   const secondary = options?.axes?.secondaryY;
   const secondaryTitleWidth = secondary?.visible !== false && secondary?.title
     ? 24 + max(0, (secondary.titleStyle?.fontSize ?? 12) - 12) : 0;
+  const secondaryLabelWidth = max(0, (secondary?.labels?.style?.fontSize ?? 12) - 12) * 3;
+  const labelBudget = !horizontal && valueFormat && verticalLabels?.maxLines === 1 &&
+    !verticalLabels.rotation && verticalLabels.maxCharacters !== undefined
+    ? min(128, max(64, verticalLabels.maxCharacters * 8 + 12 + (verticalAxis?.title ? 24 : 0))) : undefined;
   const rowLabels = family === 'heatmap' || family === 'timeline' || family === 'xrange';
-  return {left:(horizontal?112:valueFormat?compact?88:128:rowLabels?112:60)+titleWidth+extraWidth,right:family==='mixed'?(secondary?.numberFormat||options?.formatting?.number?128:64)+secondaryTitleWidth:family==='pareto'?58:28,top:22,bottom:max(['heatmap','contour'].includes(family)?108:options?.formatting?.date?80:56,rotated)+extraHeight};
+  return {left:(horizontal?112:valueFormat?labelBudget??(compact?88:128):rowLabels?112:60)+titleWidth+extraWidth,right:family==='mixed'?(secondary?.numberFormat||options?.formatting?.number?128:64)+secondaryTitleWidth+secondaryLabelWidth:family==='pareto'?58:28,top:22,bottom:max(['heatmap','contour'].includes(family)?108:options?.formatting?.date?80:56,rotated)+extraHeight};
 };
 export function hasSideLegend(options: ChartOptions, width: number): boolean {
   const position = options.legend?.position;
@@ -105,8 +111,8 @@ export function chartSvg(frame: PlanFrame, options: ChartOptions, instanceId: st
   const inset = plotBounds(frame, options), { left, top, width, height } = inset;
   const physicalAnchor = (anchor: string) => direction !== 'rtl' || anchor === 'middle' ? anchor : anchor === 'end' ? 'start' : 'end';
   const id = escapeXml(instanceId);
-  const textNode = (x: number, y: number, label: string, anchor: string, fill: string, outline: boolean, title = '', rotation = 0) =>
-    `<text x="${num(x)}" y="${num(y)}" fill="${fill}"${outline ? ` stroke="${background}" stroke-width="3" stroke-linejoin="round" paint-order="stroke"` : ''} font-size="12"${rotation ? ` transform="rotate(${num(rotation)} ${num(x)} ${num(y)})"` : ''} text-anchor="${physicalAnchor(anchor)}" direction="${direction}">${title}${escapeXml(label)}</text>`;
+  const textNode = (x: number, y: number, label: string, anchor: string, fill: string, outline: boolean, title = '', rotation = 0, style?: Omit<ChartTextStyle, 'align'>) =>
+    `<text x="${num(x)}" y="${num(y)}" fill="${fill}"${outline ? ` stroke="${background}" stroke-width="3" stroke-linejoin="round" paint-order="stroke"` : ''} font-size="${style?.fontSize ?? 12}"${style?.fontWeight ? ` font-weight="${style.fontWeight}"` : ''}${rotation ? ` transform="rotate(${num(rotation)} ${num(x)} ${num(y)})"` : ''} text-anchor="${physicalAnchor(anchor)}" direction="${direction}">${title}${escapeXml(label)}</text>`;
   const text = (x: number, y: number, label: string, anchor = 'middle', fill = muted, outline = false, fullLabel = label) =>
     textNode(x, y, label, anchor, fill, outline, `<title>${escapeXml(fullLabel)}</title>`);
   const target=(key:'axisLabel'|'dataLabel',context:ChartAxisLabelContext|ChartDataLabelContext,value:string)=>{if(!targets||!custom?.[key]?.render)return '';const token=String(targets.size);targets.set(token,{key,context,text:value});return ` data-nc-content="${token}"`;};
@@ -115,9 +121,10 @@ export function chartSvg(frame: PlanFrame, options: ChartOptions, instanceId: st
     const token = String(resources.size); resources.set(token, {commands, data, reusable: immutablePaths.has(commands)});
     return `d="M0,0" data-nc-path="${token}"`;
   };
-  const axisText = (x: number, y: number, label: string, anchor: string, lines: number, limit: number, rotation = 0, fill = muted, outline = false) => {
-    const content = axisLabelLines(label, limit, lines), first = y - (content.length - 1) * 6.5, title = escapeXml(label);
-    return `<g data-axis-label="" data-axis-coordinate="${num(x)}" aria-label="${title}"><title>${title}</title>${content.map((line, i) => textNode(x, first + i * 13, line, anchor, fill, outline, '', rotation)).join('')}</g>`;
+  const axisText = (x: number, y: number, label: string, anchor: string, lines: number, limit: number, rotation = 0, fill = muted, outline = false, style?: Omit<ChartTextStyle, 'align'>) => {
+    const step = (style?.fontSize ?? 12) + 1;
+    const content = axisLabelLines(label, limit, lines), first = y - (content.length - 1) * step / 2, title = escapeXml(label);
+    return `<g data-axis-label="" data-axis-coordinate="${num(x)}" aria-label="${title}"><title>${title}</title>${content.map((line, i) => textNode(x, first + i * step, line, anchor, style?.color ?? fill, outline, '', rotation, style)).join('')}</g>`;
   };
   const legendIndices = new Map(frame.legend.map((s, i) => [s.id, i])), seriesIndices = new Map(frame.series.map((s, i) => [s.id, i])), styles = seriesStyles(options);
   const color = (seriesId: string, fallback: string) => { const custom = styles.get(seriesId)?.color; if (custom) return custom; const i = legendIndices.get(seriesId) ?? seriesIndices.get(seriesId) ?? 0, palette = appearance?.colors; return palette?.length && (family !== 'gauge' || seriesId === 'reading') && (family !== 'treemap' || i !== 0) ? palette[max(0, family === 'treemap' ? i - 1 : i) % palette.length]! : fallback; };
@@ -153,7 +160,9 @@ export function chartSvg(frame: PlanFrame, options: ChartOptions, instanceId: st
   };
   const dataLabelLayout = appearance?.dataLabelLayout ?? 'auto';
   const labelLimit = appearance?.labelLimit ?? (dataLabelLayout === 'auto' ? 40 : 200);
-  const labelStep = max(1, ceil(frame.observations.length / labelLimit));
+  const layoutLabelLimit = family === 'dendrogram' && dataLabelLayout === 'auto'
+    ? min(labelLimit, max(1, floor(frame.height / 26))) : labelLimit;
+  const labelStep = max(1, ceil(frame.observations.length / layoutLabelLimit));
   const xFirst = frame.labels[0], xLast = frame.labels.at(-1);
   const yFirst = frame.grid[0], yLast = frame.grid.at(-1);
   const reversedValue = horizontal
@@ -196,10 +205,12 @@ export function chartSvg(frame: PlanFrame, options: ChartOptions, instanceId: st
   };
   const xTickLabel=axisFormatter(xAxis,rawValues && horizontalValueAxis);
   const axisLabel=(axis:ChartAxisLabelContext['axis'],tick:ChartAxisLabelContext['tick'],index:number,x:number,y:number,value:string,anchor:string,p:ReturnType<typeof labelPolicy>,plain=false)=>{
-    if(!custom?.axisLabel)return plain && p.layout === 'auto'?text(x,y,value,anchor):axisText(x,y,value,anchor,p.lines,p.limit,p.rotation);
+    const style = axes?.[axis]?.labels?.style;
+    const limit = style?.fontSize && style.fontSize > 12 ? max(3, floor(p.limit * 12 / style.fontSize)) : p.limit;
+    if(!custom?.axisLabel)return plain && !style && p.layout === 'auto'?text(x,y,value,anchor):axisText(x,y,value,anchor,p.lines,limit,p.rotation,muted,false,style);
     const context = Object.freeze({family, locale, axis, index, tick, defaultText: value});
     const label = contentText(custom, 'axisLabel', context);
-    return axisText(x, y, label, anchor, targets && custom.axisLabel.render ? 1 : p.lines, p.limit, p.rotation)
+    return axisText(x, y, label, anchor, targets && custom.axisLabel.render ? 1 : p.lines, limit, p.rotation, muted, false, style)
       .replace('<text ', `<text${target('axisLabel', context, label)} `);
   };
   const referenceLabels = new Map(options.referenceLabels?.map(a => [a.id, a.text]));
@@ -263,7 +274,9 @@ export function chartSvg(frame: PlanFrame, options: ChartOptions, instanceId: st
       const ticks = frame.labels.flatMap((tick, index) => visible.has(index) ||
         (horizontalValueAxis && tick.label === '0')
         ? [{tick, index, label: xTickLabel(tick)}] : []);
-      const halfWidth = (label: string) => max(...axisLabelLines(label, p.limit, p.lines).map(line => Array.from(line).length * 3.75));
+      const fontSize = xAxis?.labels?.style?.fontSize ?? 12;
+      const limit = fontSize > 12 ? max(3, floor(p.limit * 12 / fontSize)) : p.limit;
+      const halfWidth = (label: string) => max(...axisLabelLines(label, limit, p.lines).map(line => Array.from(line).length * fontSize * .3125));
       const renderTick = ({tick, index, label}: typeof ticks[number]) => {
         const half = p.layout === 'all' && !p.rotation ? min(width / 2 - 3, halfWidth(label)) + 3 : 0;
         const x = half ? max(half - left, min(width - left - half, tick.x)) : tick.x;
@@ -317,9 +330,18 @@ export function chartSvg(frame: PlanFrame, options: ChartOptions, instanceId: st
     const single = bySeries.get(s.id) ?? [];
     const exact = single.length === 1 ? observation(s.id, single[0]!.id.pointId) : '';
     if (s.areaCommands) svg += `<path ${path(s.areaCommands)} fill="${fillPaint}" fill-opacity="${num(style?.fillOpacity ?? .2)}" stroke="none"/>`;
-    if (s.commands) svg += `<path${exact} ${path(s.commands)} fill="${s.fill ? fillPaint : 'none'}" fill-opacity="${s.fill && style?.fillOpacity !== undefined ? num(style.fillOpacity) : s.fill && ['sankey', 'dependencywheel', 'chord', 'arcdiagram'].includes(family) ? '.4' : '1'}" stroke="${waterfall ? appearance?.waterfall?.connectorColor ?? paint : paint}" stroke-width="${num(appearance?.lineWidth ?? 2.25)}" stroke-linecap="round" stroke-linejoin="round"/>`;
-    for (const b of s.bars ?? []) svg += bar(b);
-    for (const part of s.parts ?? []) { if (part.commands) svg += `<path data-part="${escapeXml(part.key)}" ${path(part.commands)} fill="${part.fill ? paint : 'none'}"${part.fill ? ` fill-opacity="${num(part.opacity ?? .15)}"` : ''} stroke="${part.fill ? 'none' : paint}" stroke-width="${num(appearance?.lineWidth ?? 1.8)}"${part.dash === 'dashed' ? ' stroke-dasharray="5 3"' : part.dash === 'dotted' ? ' stroke-dasharray="2 3"' : ''}/>`; for (const b of part.bars ?? []) svg += bar(b); }
+    const linePattern = family === 'line' || family === 'spline'
+      ? ` data-forced-series="${(legendIndices.get(s.id) ?? 0) % 4}"` : '';
+    if (s.commands) svg += `<path${linePattern}${exact} ${path(s.commands)} fill="${s.fill ? fillPaint : 'none'}" fill-opacity="${s.fill && style?.fillOpacity !== undefined ? num(style.fillOpacity) : s.fill && ['sankey', 'dependencywheel', 'chord', 'arcdiagram'].includes(family) ? '.4' : '1'}" stroke="${waterfall ? appearance?.waterfall?.connectorColor ?? paint : paint}" stroke-width="${num(appearance?.lineWidth ?? 2.25)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    const denseFlags = family === 'flags' && (s.bars?.length ?? 0) * 8 > frame.width;
+    for (const b of s.bars ?? []) {
+      if (denseFlags) {
+        svg += `<circle${observation(s.id, b.pointId)} ${circleGeometry(b.x + b.width / 2, b.y + b.height / 2, 1.5)} fill="${paint}"/>`;
+      } else svg += bar(b);
+    }
+    for (const part of s.parts ?? []) {
+      const dash = componentDash(family, part.key) ?? (part.dash === 'dashed' ? '5 3' : part.dash === 'dotted' ? '2 3' : '');
+      if (part.commands) svg += `<path data-part="${escapeXml(part.key)}" ${path(part.commands)} fill="${part.fill ? paint : 'none'}"${part.fill ? ` fill-opacity="${num(part.opacity ?? .15)}"` : ''} stroke="${part.fill ? 'none' : paint}" stroke-width="${num(appearance?.lineWidth ?? 1.8)}"${dash ? ` stroke-dasharray="${dash}"` : ''}/>`; for (const b of part.bars ?? []) svg += bar(b); }
     for (const c of s.circles ?? []) {
       const attributes = observation(s.id, c.pointId);
       const fill = observationColor(s.id, c.pointId) ?? fillPaint;
@@ -407,7 +429,7 @@ export function chartSvg(frame: PlanFrame, options: ChartOptions, instanceId: st
   const annotations=appearance?.stackLabels?[...(frame.annotations??[]).filter(a=>a.stackTotal),...(frame.annotations??[]).filter(a=>!a.stackTotal)]:frame.annotations??[];
   let forcedValueLabels = 0;
   for (const [i,a] of annotations.entries()) if ((a.stackTotal?(appearance?.stackLabels??appearance?.dataLabels):(a.role === 'label' || appearance?.dataLabels || family === 'gauge')) && (!a.box || a.box.width >= 48 && a.box.height >= (timeline ? 18 : 20))) {
-    if (timeline && !appearance?.dataLabels) continue;
+    if (timeline && !appearance?.dataLabels || family === 'flags' && a.text === '•' && frame.observations.length * 8 > frame.width) continue;
     if (dataLabelLayout !== 'auto' && a.role === 'value' && forcedValueLabels++ >= labelLimit) continue;
     const s = ['treemap', 'sunburst', 'funnel', 'pyramid', 'item', 'pictorial', 'packedbubble'].includes(family) && a.box ? frame.series[seriesIndices.get(a.box!.seriesId) ?? -1] : undefined;
     const cell = a.box && annotationPaints.get(JSON.stringify([a.box.seriesId, a.x, a.y]));
@@ -466,9 +488,9 @@ export function chartSvg(frame: PlanFrame, options: ChartOptions, instanceId: st
     if (axis.type === 'continuous' && axis.domain) {
       svg += `<defs><linearGradient id="${id}-colors">${axis.stops.map(stop => `<stop offset="${num(stop.at * 100)}%" stop-color="${escapeXml(stop.color)}"/>`).join('')}</linearGradient></defs><rect data-color-axis="continuous" x="${num(x)}" y="${num(y)}" width="${num(w)}" height="9" rx="2" fill="url(#${id}-colors)"/>${text(x, y + 25, displayNumber(axis.domain[0]), 'start')}${text(x + w, y + 25, displayNumber(axis.domain[1]), 'end')}`;
     } else if (axis.type === 'classes') {
-      const shown = axis.classes.slice(0, 6), columns = min(3, shown.length), slot = frame.width / max(1, columns), labelLength = floor(slot / 7);
+      const shown = axis.classes.slice(0, 6), columns = min(frame.width < 280 ? 2 : 3, shown.length), slot = frame.width / max(1, columns), labelLength = max(1, floor((slot - 20) / 8));
       svg += `<g data-color-axis="classes"><title>${escapeXml(axis.classes.map(item => item.label).join(', '))}</title>`;
-      shown.forEach((item, i) => { const xx = i % columns * slot, yy = y + floor(i / columns) * 22; svg += `<rect x="${num(xx)}" y="${num(yy - 9)}" width="11" height="11" fill="${escapeXml(item.color)}"/>${text(xx + 17, yy, item.label.length > labelLength ? item.label.slice(0, max(1, labelLength - 1)) + '…' : item.label, 'start')}`; });
+      shown.forEach((item, i) => { const xx = i % columns * slot, yy = (family === 'tilemap' ? frame.height + 22 : y - (columns === 2 ? 20 : 0)) + floor(i / columns) * 20; svg += `<g><title>${escapeXml(item.label)}</title><rect x="${num(xx)}" y="${num(yy - 9)}" width="11" height="11" fill="${escapeXml(item.color)}"/>${text(xx + 17, yy, axisLabelLines(item.label, labelLength, 1)[0] ?? '', 'start')}</g>`; });
       svg += '</g>';
     }
   }

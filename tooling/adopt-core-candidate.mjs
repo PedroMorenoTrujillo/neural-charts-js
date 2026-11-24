@@ -1,0 +1,14 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {spawnSync,execFileSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
+import {writeCoreVersion} from './write-core-version.mjs';
+const root=path.resolve(import.meta.dirname,'..'),core=path.resolve(process.env.NEURAL_CORE_WORKTREE??path.join(root,'../neural/.worktrees/charts-core-v1')),out=path.join(root,'artifacts');
+const pkg=JSON.parse(fs.readFileSync(path.join(core,'package.json')));for(const key of ['dependencies','optionalDependencies','peerDependencies'])if(Object.keys(pkg[key]??{}).length)throw Error('Core runtime dependencies forbidden');
+fs.mkdirSync(out,{recursive:true});const packed=spawnSync('npm',['pack','--ignore-scripts','--json','--pack-destination',out],{cwd:core,encoding:'utf8'});if(packed.status!==0)throw Error(packed.stderr);
+const file=path.join(out,JSON.parse(packed.stdout)[0].filename),bytes=fs.readFileSync(file),sha256=createHash('sha256').update(bytes).digest('hex'),name=`neural-charts-core-${pkg.version}-${sha256.slice(0,12)}.tgz`;
+fs.mkdirSync(path.join(root,'vendor'),{recursive:true});fs.writeFileSync(path.join(root,'vendor',name),bytes);
+const installed=spawnSync('npm',['install','./vendor/'+name,'--save-exact','--ignore-scripts','--no-audit','--no-fund'],{cwd:root,encoding:'utf8'});if(installed.status!==0)throw Error(installed.stdout+installed.stderr);
+fs.writeFileSync(path.join(root,'docs/core-candidate.json'),JSON.stringify({version:pkg.version,archive:'vendor/'+name,sha256,ownerWorktree:core,ownerHead:execFileSync('git',['rev-parse','HEAD'],{cwd:core,encoding:'utf8'}).trim(),ownerDiffSha256:createHash('sha256').update(execFileSync('git',['diff','HEAD'],{cwd:core})).digest('hex'),published:false},null,2));
+writeCoreVersion(root);
+console.log('Installed real local Core candidate '+pkg.version+' '+sha256);

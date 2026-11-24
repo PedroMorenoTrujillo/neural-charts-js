@@ -3,7 +3,12 @@ import type {ChartOptions,ChartAxisOptions} from './types.js';
 // from the old style must never leak into the replacement.
 function mergeAxis(base: ChartAxisOptions | undefined, patch: ChartAxisOptions): ChartAxisOptions {
   const axis = {...base, ...patch};
-  if (patch.labels) axis.labels = {...base?.labels, ...patch.labels};
+  if (patch.labels) {
+    axis.labels = {
+      ...base?.labels, ...patch.labels,
+      ...(patch.labels.style ? {style: {...base?.labels?.style, ...patch.labels.style}} : {}),
+    };
+  }
   if (patch.numberFormat) {
     const replace = patch.numberFormat.style !== undefined && patch.numberFormat.style !== (base?.numberFormat?.style ?? 'decimal');
     axis.numberFormat = {...(replace ? undefined : base?.numberFormat), ...patch.numberFormat};
