@@ -1,6 +1,6 @@
 {
   "name": "@neural-charts/web",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
@@ -37,7 +37,7 @@
     "node": ">=22.22.3"
   },
   "dependencies": {
-    "@neural-charts/core": "0.1.5"
+    "@neural-charts/core": "0.1.6"
   },
   "homepage": "https://charts.neuralui.org/",
   "repository": {
@@ -53,13 +53,16 @@
     "build": "tsc -p tsconfig.json",
     "benchmark": "npm run build && node tooling/benchmark.mjs",
     "test": "npm run build && node --test tests/*.test.mjs",
+    "test:coverage:browser": "npm run build && c8 --all --src=dist --include=\"dist/**\" --reporter=text-summary --reporter=json-summary --reporter=json node tooling/test-coverage.mjs",
     "verify": "npm test && node tooling/verify.mjs",
     "pack:local": "npm run build && node tooling/pack-web.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
     "axe-core": "4.14.0",
+    "c8": "10.1.3",
     "esbuild": "0.28.2",
+    "playwright": "1.63.0",
     "typescript": "5.9.3"
   }
 }

@@ -7,14 +7,23 @@ import {createHash} from 'node:crypto';
 import {build} from 'esbuild';
 import {chromium,firefox,webkit} from '@playwright/test';
 import {packWeb} from './pack-web.mjs';
+import {openInstrumentedPage} from './browser-modules.mjs';
 
-const root=path.resolve(import.meta.dirname,'..'),out=path.resolve(root,process.env.NEURAL_CONTENT_ARTIFACTS??'artifacts/content-final');
+const instrumented=Boolean(process.env.NODE_V8_COVERAGE);
+const root=path.resolve(import.meta.dirname,'..');
+const out=process.env.NEURAL_CONTENT_ARTIFACTS
+  ?path.resolve(root,process.env.NEURAL_CONTENT_ARTIFACTS)
+  :instrumented?fs.mkdtempSync(path.join(root,'coverage','content-')):path.join(root,'artifacts/content-final');
 assert(!fs.existsSync(path.join(out,'results.json')),'Preserve prior receipt; choose a fresh NEURAL_CONTENT_ARTIFACTS directory');
 fs.mkdirSync(out,{recursive:true});
-const temp=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'nc-content-consumer-'))),archive=process.env.NEURAL_WEB_ARCHIVE?path.resolve(root,process.env.NEURAL_WEB_ARCHIVE):packWeb(),sha=bytes=>createHash('sha256').update(bytes).digest('hex'),archiveSha256=sha(fs.readFileSync(archive)),core=JSON.parse(fs.readFileSync(path.join(root,'docs/core-candidate.json'),'utf8'));
-if(process.env.NEURAL_EXPECT_WEB_SHA)assert.equal(archiveSha256,process.env.NEURAL_EXPECT_WEB_SHA,'Unexpected Web archive');
-assert.equal(sha(fs.readFileSync(path.join(root,core.archive))),core.sha256,'Core archive mismatch');
-const result={status:'RUNNING',recordedAt:new Date().toISOString(),archiveSha256,core,scope:'Real offline packed-consumer content-port verification, native Chromium/Firefox/WebKit, public type fixtures, portable text exports and owned cleanup. Not manual visual/screen-reader approval or a performance benchmark.',browsers:[],failures:[],humanVisual:'PENDING',manualScreenReaders:'PENDING'},save=()=>fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(result,null,2)+'\n');save();
+const temp=instrumented?undefined:fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'nc-content-consumer-')));
+const archive=instrumented?undefined:process.env.NEURAL_WEB_ARCHIVE?path.resolve(root,process.env.NEURAL_WEB_ARCHIVE):packWeb();
+const sha=bytes=>createHash('sha256').update(bytes).digest('hex'),core=JSON.parse(fs.readFileSync(path.join(root,'docs/core-candidate.json'),'utf8'));
+const archiveSha256=archive?sha(fs.readFileSync(archive)):undefined;
+if(archive&&process.env.NEURAL_EXPECT_WEB_SHA)assert.equal(archiveSha256,process.env.NEURAL_EXPECT_WEB_SHA,'Unexpected Web archive');
+if(archive)assert.equal(sha(fs.readFileSync(path.join(root,core.archive))),core.sha256,'Core archive mismatch');
+const scope=instrumented?'Instrumented Chromium with unchanged compiled modules, portable content and owned cleanup.':'Real offline packed-consumer content-port verification, native Chromium/Firefox/WebKit, public type fixtures, portable text exports and owned cleanup.';
+const result={status:'RUNNING',recordedAt:new Date().toISOString(),archiveSha256,core,scope,browsers:[],failures:[],humanVisual:'PENDING',manualScreenReaders:'PENDING'},save=()=>fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(result,null,2)+'\n');save();
 const positive=`import {createChart,renderChartSvg,type ChartContentPorts,type ChartData,type ChartOptions} from '@neural-charts/web';
 declare const host:HTMLElement;declare const data:ChartData;declare const options:ChartOptions;
 const ports:ChartContentPorts={
@@ -52,6 +61,8 @@ const content=Object.fromEntries(['title','tooltip','legend','axisLabel','dataLa
 const rendered=renderChartSvg(data,{title:'Server title',appearance:{dataLabels:true}},{instanceId:'node-content',composition:'chart',content});assert.equal(rendered.status,'ok');for(const key of ['title','legend','axisLabel','dataLabel'])assert(counts[key]>0&&rendered.value.includes('SSR-'+key+' &lt;safe&gt;'));assert.equal(renders,0);assert.deepEqual(errors,[]);assert.equal(JSON.stringify(data),before);const csv=exportChartCsv(data);assert.equal(csv.status,'ok');assert(csv.value.includes('12.34567')&&!csv.value.includes('SSR-'));console.log(JSON.stringify({status:'PASS',counts,renders,rawCsv:true,noBrowserGlobals:true}));
 `;
 try{
+ let bundled;
+ if(temp){
  fs.writeFileSync(path.join(temp,'package.json'),JSON.stringify({name:'private-content-consumer',private:true,type:'module'}));
  const install=spawnSync('npm',['install',archive,path.join(root,core.archive),'--offline','--ignore-scripts','--no-audit','--no-fund','--cache',path.join(temp,'cache')],{cwd:temp,encoding:'utf8',timeout:120000});assert.equal(install.status,0,install.stdout+install.stderr);
  for(const name of ['web','core'])assert(!fs.lstatSync(path.join(temp,'node_modules/@neural-charts',name)).isSymbolicLink(),'No linked sources');
@@ -59,11 +70,22 @@ try{
  const typed=spawnSync(process.execPath,[path.join(root,'node_modules/typescript/bin/tsc'),'-p',path.join(temp,'tsconfig.json')],{cwd:temp,encoding:'utf8',timeout:60000});fs.writeFileSync(path.join(out,'types.log'),typed.stdout+typed.stderr);fs.writeFileSync(path.join(out,'positive.ts'),positive);fs.writeFileSync(path.join(out,'negative.ts'),negative);assert.equal(typed.status,0,'Public content type fixtures failed: '+typed.stdout+typed.stderr);result.types={status:'PASS',positiveSlots:5,negativeExpectErrors:5};save();
  fs.writeFileSync(path.join(temp,'server.mjs'),serverFixture);const ssr=spawnSync(process.execPath,[path.join(temp,'server.mjs')],{cwd:temp,encoding:'utf8',timeout:60000});fs.writeFileSync(path.join(out,'server.log'),ssr.stdout+ssr.stderr);assert.equal(ssr.status,0,'Real Node SSR content failed: '+ssr.stdout+ssr.stderr);result.server=JSON.parse(ssr.stdout);save();
  const entry=path.join(temp,'entry.js');fs.writeFileSync(entry,"import{createChart,createChartSyncGroup,renderChartSvg,rasterizeChartSvg}from'@neural-charts/web';globalThis.NC={createChart,createChartSyncGroup,renderChartSvg,rasterizeChartSvg}");
- const bundled=await build({entryPoints:[entry],bundle:true,write:false,minify:true,platform:'browser',format:'iife',target:'es2022',metafile:true});assert(Object.keys(bundled.metafile.inputs).every(file=>path.resolve(file).startsWith(temp+path.sep)),'Only installed archives enter consumer');
- for(const [name,engine]of Object.entries({chromium,firefox,webkit})){
+ bundled=await build({entryPoints:[entry],bundle:true,write:false,minify:true,platform:'browser',format:'iife',target:'es2022',metafile:true});assert(Object.keys(bundled.metafile.inputs).every(file=>path.resolve(file).startsWith(temp+path.sep)),'Only installed archives enter consumer');
+ }
+ for(const [name,engine]of Object.entries(instrumented?{chromium}:{chromium,firefox,webkit})){
   const browser=await engine.launch({timeout:30000}),checked={name,version:browser.version(),cases:[]};let page;const timeout=setTimeout(()=>browser.close().catch(()=>{}),180000);timeout.unref();
   try{
-   page=await browser.newPage({viewport:{width:1100,height:900},hasTouch:true,reducedMotion:'reduce'});const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.setContent('<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Content ports</title><style>body{margin:0;padding:12px;font:14px system-ui}#host,#other{width:900px}</style></head><body><main><h1>Content ports verification</h1><div id="host"></div><div id="other"></div></main></body></html>');await page.addScriptTag({content:bundled.outputFiles[0].text});await page.addScriptTag({path:path.join(root,'node_modules/axe-core/axe.min.js')});
+   page=await browser.newPage({viewport:{width:1100,height:900},hasTouch:true,reducedMotion:'reduce'});const errors=[];page.on('pageerror',error=>errors.push(error.message));
+   const markup='<style>body{margin:0;padding:12px;font:14px system-ui}#host,#other{width:900px}</style><main><h1>Content ports verification</h1><div id="host"></div><div id="other"></div></main>';
+   let writeCoverage;
+   if(bundled){
+    await page.setContent('<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Content ports</title></head><body>'+markup+'</body></html>');
+    await page.addScriptTag({content:bundled.outputFiles[0].text});
+   }else{
+    writeCoverage=await openInstrumentedPage(page,markup,'en');
+    await page.evaluate(async()=>{globalThis.NC=await import('/web/index.js');});
+   }
+   await page.addScriptTag({path:path.join(root,'node_modules/axe-core/axe.min.js')});
    await page.evaluate(()=>{
     const q={checks:0,listeners:[],renders:[],textCalls:0,renderCalls:0,diagnostics:[],late:[],observers:new Set(),raf:new Set(),urls:new Set(),fx:undefined};window.Q=q;q.check=(v,m)=>{q.checks++;if(!v)throw Error(m)};
     const add=EventTarget.prototype.addEventListener,remove=EventTarget.prototype.removeEventListener,capture=options=>typeof options==='boolean'?options:!!options?.capture;EventTarget.prototype.addEventListener=function(type,listener,options){if(listener&&this instanceof Element&&this.closest('[data-nc-web]')&&!q.listeners.some(v=>v.target===this&&v.type===type&&v.listener===listener&&v.capture===capture(options)))q.listeners.push({target:this,type,listener,capture:capture(options)});return add.call(this,type,listener,options)};EventTarget.prototype.removeEventListener=function(type,listener,options){q.listeners=q.listeners.filter(v=>!(v.target===this&&v.type===type&&v.listener===listener&&v.capture===capture(options)));return remove.call(this,type,listener,options)};
@@ -128,8 +150,50 @@ try{
    checked.currentCase='synchronization';checked.cases.push(await page.evaluate(()=>{const q=Q,start=q.checks,group=NC.createChartSyncGroup(),counts={join:0,emit:0,leave:0},sync={join(receive){counts.join++;const channel=group.join(receive);return{emit(value){counts.emit++;channel.emit(value)},leave(){counts.leave++;channel.leave()}}}},data=q.data(),other={...data,series:[{...data.series[0],id:'other',data:data.series[0].data.map(p=>({...p,id:'other-'+p.id}))}]},a=q.mount(q.ports(true),data,q.options(),{synchronization:sync}),b=NC.createChart(document.getElementById('other'),other,q.options(),{instanceId:'other-content-owner',synchronization:sync,content:q.ports(true)});q.check(b.status==='ok'&&counts.join===2&&group.size===2,'Synchronization did not join once each');q.key('Home');q.check(counts.emit===1,'One keyboard gesture emitted duplicate sync');q.check(document.querySelector('#other [role=tooltip]').textContent.startsWith('TT other-p0 '),'Synchronization original-X fallback failed');a.chart.destroy();a.alive=false;q.fx=undefined;b.value.destroy();q.check(q.observers.size===0&&q.raf.size===0,'Synchronized owner retained native resources');q.check(counts.leave===2&&group.size===0,'Synchronization owner retained');const emit=counts.emit;group.destroy();q.check(counts.emit===emit,'Destroy emitted a late sync');return{id:'synchronization',assertions:q.checks-start,counts};}));
    checked.currentCase='shadow-scope';await page.evaluate(()=>{const q=Q,start=q.checks,container=document.createElement('div'),second=document.createElement('div');document.querySelector('main').append(container,second);const scope=container.attachShadow({mode:'open'}),scope2=second.attachShadow({mode:'open'}),hosts=[document.createElement('div'),document.createElement('div')];for(const host of hosts){host.style.width='430px';scope.append(host);}const options={...q.options(),height:260},charts=hosts.map((host,i)=>NC.createChart(host,q.data(),options,{instanceId:'shadow-content-'+i}));q.check(charts.every(r=>r.status==='ok'),'Shadow chart failed');q.check(scope.querySelectorAll('[data-nc-web]').length===2&&scope.querySelectorAll('style[data-neural-charts-style]').length===1,'Shadow scope did not share exactly one sheet');q.check(document.querySelectorAll('style[data-neural-charts-style]').length===1,'Document stylesheet duplicated');const button=scope.querySelector('button');q.check(getComputedStyle(button).borderRadius==='5px','Shadow button did not receive shared styles');const sheet=scope.querySelector('style[data-neural-charts-style]');q.check([...sheet.sheet.cssRules].some(rule=>rule.selectorText?.includes(':focus-visible')),'Shadow focus rule missing');const root=hosts[0].querySelector('[data-nc-web]');root.focus();window.shadowProbe={start,container,second,scope,scope2,hosts,charts:charts.map(r=>r.value),options,sheet};});
    checked.nativeFocusKey=name==='webkit'?'Alt+Tab':'Tab';await page.keyboard.press(checked.nativeFocusKey);checked.cases.push(await page.evaluate(()=>{const q=Q,p=shadowProbe,focused=p.scope.activeElement;q.check(focused?.tagName==='BUTTON'&&focused.matches(':focus-visible'),'Keyboard focus did not enter Shadow button visibly');const focus=getComputedStyle(focused),focusStyle=focus.outlineStyle,focusWidth=focus.outlineWidth;q.check(focusStyle==='solid'&&focusWidth==='2px','Shadow focus outline is not visible');p.sheet.remove();q.check(p.charts[0].updateOptions(p.options).status==='ok'&&p.scope.querySelector('style[data-neural-charts-style]')===p.sheet,'Paint did not restore the same shared sheet');p.scope2.append(p.hosts[1]);q.check(p.charts[1].updateOptions({...p.options,title:'Moved scope'}).status==='ok','Moved Shadow chart failed');q.check(p.scope.querySelectorAll('style[data-neural-charts-style]').length===1&&p.scope2.querySelectorAll('style[data-neural-charts-style]').length===1,'Scope migration did not create exactly one sheet per scope');q.check(getComputedStyle(p.scope2.querySelector('button')).borderRadius==='5px','Moved scope styles missing');for(const chart of p.charts)chart.destroy();q.check(p.scope.querySelectorAll('[data-nc-web]').length===0&&p.scope2.querySelectorAll('[data-nc-web]').length===0,'Destroyed Shadow owners retained');q.check(q.observers.size===0&&q.raf.size===0&&q.listeners.length===0,'Shadow owner resource retained');q.check(p.scope.querySelectorAll('style[data-neural-charts-style]').length===1&&p.scope2.querySelectorAll('style[data-neural-charts-style]').length===1,'Expected one bounded reusable sheet per scope');const info={id:'shadow-scope',assertions:q.checks-p.start,initialCharts:2,initialSheets:1,finalScopes:2,sheetsPerScope:1,destroyedOwners:0,listeners:q.listeners.length,observers:q.observers.size,focus:{style:focusStyle,width:focusWidth},buttonRadius:'5px',scopeMigration:true};p.container.remove();p.second.remove();delete window.shadowProbe;return info;}));
+   checked.currentCase='bounded-content-cleanup';
+   checked.cases.push(await page.evaluate(() => {
+     const q = Q;
+     const start = q.checks;
+     const reports = [];
+     const signals = [];
+     const fx = q.mount({
+       title: {
+         text: context => context.defaultText,
+         render: host => host.replaceChildren(...Array.from({ length: 101 }, () => host.ownerDocument.createElement('span'))),
+       },
+       legend: {
+         text: context => context.defaultText,
+         render: (host, context, signal) => {
+           signals.push(signal);
+           const label = host.ownerDocument.createElement('span');
+           label.textContent = context.defaultText;
+           host.append(label);
+           return () => { throw new Error('Consumer cleanup failed'); };
+         },
+       },
+       onError: diagnostic => {
+         reports.push(diagnostic);
+         throw new Error('Consumer diagnostics failed');
+       },
+     });
+     q.check(fx.root.getAttribute('aria-label') === (fx.options.title ?? 'Chart'), 'Oversized title must keep the portable text');
+     q.check(reports.some(diagnostic => diagnostic.path === 'content.title' && diagnostic.reason === 'CONTENT_RENDER_FAILED'),
+       'Oversized content must dispatch a render diagnostic even if the callback throws');
+     const firstSignals = [...signals];
+     q.check(firstSignals.length > 0 && firstSignals.every(signal => !signal.aborted), 'Legend templates must start owned');
+     q.check(fx.chart.updateOptions({ ...fx.options, title: 'Revised heading' }).status === 'ok', 'Cleanup errors must not abort updates');
+     q.check(firstSignals.every(signal => signal.aborted), 'Old legend work must abort before replacement');
+     q.check(reports.filter(diagnostic => diagnostic.path === 'content.legend' && diagnostic.reason === 'CONTENT_CLEANUP_FAILED').length === 1,
+       'The owning chart must report a single cleanup diagnostic for repeated legend failures');
+     q.check(fx.errors.some(diagnostic => diagnostic.path === 'content.legend' && diagnostic.reason === 'CONTENT_CLEANUP_FAILED'),
+       'A failed content observer must not suppress the mount diagnostics');
+     q.destroy();
+     q.check(signals.every(signal => signal.aborted), 'Destroy must abort all surviving legend work');
+     return { id: 'bounded-content-cleanup', assertions: q.checks - start };
+   }));
    checked.currentCase='final-resources';checked.resources=await page.evaluate(()=>{const q=Q;q.check(!q.fx&&q.observers.size===0&&q.raf.size===0&&q.urls.size===0&&q.late.length===0&&q.listeners.length===0,'Final owned resource retained');q.released(q.renders);return{assertions:q.checks,records:q.renders.length,listeners:q.listeners.length,observers:q.observers.size,raf:q.raf.size,blobUrls:q.urls.size,lateOutputs:q.late.length}});assert.deepEqual(errors,[],'Unexpected browser errors');result.browsers.push(checked);save();
+   await writeCoverage?.('dom-content.js');
   }catch(error){if(page&&!page.isClosed()){await page.screenshot({path:path.join(out,name+'-failure.png'),fullPage:true}).catch(()=>{});const html=await page.content().catch(()=>undefined);if(html)fs.writeFileSync(path.join(out,name+'-failure.html'),html);}result.failures.push({browser:name,case:checked.currentCase,error:String(error)});result.browsers.push(checked);save();throw error;}finally{clearTimeout(timeout);await browser.close();}
  }
- result.status='PASS';result.completedAt=new Date().toISOString();save();console.log('PASS packed content ports, types, three engines and owned cleanup');
-}catch(error){result.status='FAIL';result.error=String(error);save();throw error;}finally{fs.rmSync(temp,{recursive:true,force:true});}
+ result.status='PASS';result.completedAt=new Date().toISOString();save();console.log('PASS '+scope);
+}catch(error){result.status='FAIL';result.error=String(error);save();throw error;}finally{if(temp)fs.rmSync(temp,{recursive:true,force:true});}

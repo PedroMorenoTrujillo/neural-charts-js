@@ -38,6 +38,25 @@ export function observationBars(bars: readonly PlanBar[] | undefined) {
   return byId;
 }
 
+/** X-range outline commands contain the interval rectangle. Bars contain its progress fill. */
+export function intervalLabelBounds(frame: PlanFrame): Map<string, Map<string, PlanBar>> {
+  const bySeries = new Map<string, Map<string, PlanBar>>();
+  const outlines = new Map(frame.series.map(series => [series.id, series.commands ?? []]));
+  const nextOutline = new Map<string, number>();
+  for (const { id, interval } of frame.observations) {
+    if (!interval || interval.duration <= 0) continue;
+    const commands = outlines.get(id.seriesId);
+    const offset = nextOutline.get(id.seriesId) ?? 0;
+    nextOutline.set(id.seriesId, offset + 5);
+    const start = commands?.[offset], end = commands?.[offset + 2];
+    if (start?.type !== 'M' || end?.type !== 'L' || commands?.[offset + 4]?.type !== 'Z') continue;
+    let bounds = bySeries.get(id.seriesId);
+    if (!bounds) bySeries.set(id.seriesId, bounds = new Map());
+    bounds.set(id.pointId, { x: start.x, y: start.y, width: end.x - start.x, height: end.y - start.y });
+  }
+  return bySeries;
+}
+
 type ObservationDetail =
   | {type: 'range'; top: number; bottom: number}
   | {type: 'price'; commands: readonly PlanCommand[]};

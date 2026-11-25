@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { chromium } from '@playwright/test';
+import { openInstrumentedPage } from './browser-modules.mjs';
 
-const bundle = await build({
+const bundle = process.env.NODE_V8_COVERAGE ? undefined : await build({
   absWorkingDir: new URL('../', import.meta.url).pathname,
   entryPoints: ['src/drilldown.ts'], bundle: true, write: false, format: 'iife',
   platform: 'browser', globalName: 'drilldown',
@@ -12,9 +13,16 @@ try {
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.setContent('<main id="host" style="width:720px"></main>');
-  await page.addScriptTag({ content: bundle.outputFiles[0].text });
-  const result = await page.evaluate(() => {
+  const markup = '<main id="host" style="width:720px"></main>';
+  let writeCoverage;
+  if (bundle) {
+    await page.setContent(markup);
+    await page.addScriptTag({ content: bundle.outputFiles[0].text });
+  } else {
+    writeCoverage = await openInstrumentedPage(page, markup);
+    await page.evaluate(async () => { globalThis.drilldown = await import('/web/drilldown.js'); });
+  }
+  const result = await page.evaluate(async () => {
     const host = document.getElementById('host');
     const values = ['a', 'b', 'c', 'd'].map(id => ({ id, label: id.toUpperCase() }));
     const data = {
@@ -66,6 +74,10 @@ try {
       focused: document.activeElement === owner(), online: controller.exportCsv().value.includes('Online'),
       charts: host.querySelectorAll('[data-nc-web]').length,
     };
+    const updated = controller.update(data, { ...options, nodes: { ...options.nodes, detail: { title: 'Updated detail' } } });
+    const exportedSvg = controller.exportSvg();
+    const exportedPng = await controller.exportPng({ pixelRatio: 1 });
+    const png = [...new Uint8Array(await exportedPng.slice(0, 8).arrayBuffer())];
     back.click();
     const restored = {
       node: controller.getTrail().at(-1), type: owner().dataset.type, focused: document.activeElement === owner(),
@@ -76,10 +88,16 @@ try {
     const retained = owner() === previous;
     controller.destroy();
     const destroyed = host.children.length === 0 && controller.back() === false;
+    let destroyedSvg, destroyedPng;
+    try { controller.exportSvg(); } catch (error) { destroyedSvg = error.message; }
+    try { await controller.exportPng(); } catch (error) { destroyedPng = error.message; }
     return {
       resolved: resolved.status === 'ok' && resolved.value.data.type,
       invalid: invalid.status, emptyAfterInvalid, categoriesBefore, categoriesZoomed,
       passive, eligible, detail, restored, malformed: malformed.status, retained, destroyed, navigated, diagnostics,
+      updated: updated.status, exportedSvg, png, destroyedSvg, destroyedPng,
+      destroyedCsv: controller.exportCsv().diagnostic.reason,
+      destroyedUpdate: controller.update(data).diagnostic.reason,
     };
   });
   assert.equal(result.resolved, 'column');
@@ -87,12 +105,76 @@ try {
   assert(result.emptyAfterInvalid && result.passive && result.eligible, JSON.stringify(result));
   assert.notDeepEqual(result.categoriesBefore, result.categoriesZoomed);
   assert.deepEqual(result.detail, { node: 'detail', type: 'pie', focused: true, online: true, charts: 1 });
+  assert.equal(result.updated, 'ok');
+  assert.match(result.exportedSvg, /Updated detail/);
+  assert.deepEqual(result.png, [137, 80, 78, 71, 13, 10, 26, 10]);
   assert.deepEqual(result.restored, { node: 'overview', type: 'column', focused: true, hidden: 'false', categories: result.categoriesZoomed });
   assert.deepEqual(result.navigated, ['detail', 'overview']);
   assert.equal(result.malformed, 'invalid');
   assert(result.retained && result.destroyed);
+  for (const diagnostic of [result.destroyedSvg, result.destroyedPng, result.destroyedCsv, result.destroyedUpdate]) {
+    assert.equal(diagnostic, 'DESTROYED');
+  }
   assert.deepEqual(result.diagnostics, []);
+  const boundary = await page.evaluate(() => {
+    const host = document.getElementById('host');
+    const rootData = {
+      type: 'column', axes: { x: { type: 'category', values: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }] }, y: { type: 'linear' } },
+      series: [{ id: 's', name: 'Source', data: [{ id: 'first', x: 'a', y: 0 }, { id: 'last', x: 'b', y: 10 }] }],
+    };
+    const invalid = { ...rootData, series: [{ ...rootData.series[0], data: [{ id: 'first', x: 'a', y: 'invalid' }] }] };
+    const child = { type: 'pie', data: [{ id: 'item', label: 'Item', value: 4 }] };
+    const data = {
+      rootId: 'root',
+      nodes: [{ id: 'root', data: rootData }, { id: 'child', data: invalid }],
+      links: [{ fromNodeId: 'root', datumId: { seriesId: 's', pointId: 'first' }, toNodeId: 'child' }],
+    };
+    const badRoot = { ...data, nodes: [{ id: 'root', data: invalid }, { id: 'child', data: child }] };
+    const initialFailure = drilldown.createChartDrilldown(host, badRoot, {}, { instanceId: 'invalid-visible-root' });
+    const emptyAfterFailure = host.childElementCount === 0;
+    const notices = [], navigated = [];
+    const mounted = drilldown.createChartDrilldown(host, data, {}, {
+      instanceId: 'atomic-drilldown',
+      onDiagnostic: notice => notices.push(notice),
+      onNavigationChange: event => navigated.push(event.nodeId),
+    });
+    if (mounted.status !== 'ok') throw Error(JSON.stringify(mounted.diagnostic));
+    const controller = mounted.value;
+    const root = host.querySelector('[data-nc-web]');
+    const enter = host.querySelector('[data-drilldown-enter]');
+    const selectFirst = () => {
+      const active = host.querySelector('[data-nc-web]');
+      for (const key of ['Home', 'Enter']) active.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+    };
+    selectFirst();
+    const childFailure = controller.enter();
+    const retained = root === host.querySelector('[data-nc-web]');
+    const repaired = controller.update({ ...data, nodes: [data.nodes[0], { id: 'child', data: child }] });
+    if (enter.disabled) selectFirst();
+    const available = !enter.disabled;
+    const success = controller.enter();
+    const childType = host.querySelector('[data-nc-web]').dataset.type;
+    const removed = controller.update({ ...data, nodes: [data.nodes[0]], links: [] });
+    const fallback = controller.getTrail();
+    const nothingToEnter = controller.enter();
+    controller.destroy();
+    controller.destroy();
+    return { initialFailure: initialFailure.status, emptyAfterFailure, childFailure, retained, notices,
+      repaired: repaired.status, available, success, childType, removed: removed.status, fallback, nothingToEnter, navigated };
+  });
+  assert.equal(boundary.initialFailure, 'invalid');
+  assert(boundary.emptyAfterFailure && boundary.retained);
+  assert.equal(boundary.childFailure, false);
+  assert.equal(boundary.notices.length, 1);
+  assert.equal(boundary.repaired, 'ok');
+  assert(boundary.available && boundary.success);
+  assert.equal(boundary.childType, 'pie');
+  assert.equal(boundary.removed, 'ok');
+  assert.deepEqual(boundary.fallback, ['root']);
+  assert.equal(boundary.nothingToEnter, false);
+  assert.deepEqual(boundary.navigated, ['child', 'root']);
   assert.deepEqual(errors, []);
+  await writeCoverage?.('drilldown.js');
   console.log('Drilldown selection, view restoration, focus, export, validation and teardown passed in Chromium.');
 } finally {
   await browser.close();
