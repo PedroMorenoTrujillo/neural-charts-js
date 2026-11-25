@@ -37,7 +37,7 @@
     "node": ">=22.22.3"
   },
   "dependencies": {
-    "@neural-charts/core": "0.1.5"
+    "@neural-charts/core": "0.1.6"
   },
   "homepage": "https://charts.neuralui.org/",
   "repository": {
