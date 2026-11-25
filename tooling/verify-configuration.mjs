@@ -9,17 +9,30 @@ import {chromium,firefox,webkit} from '@playwright/test';
 import {packWeb} from './pack-web.mjs';
 import {webExtensions} from '../examples/web-extensions.mjs';
 
-const root=path.resolve(import.meta.dirname,'..'),temp=fs.mkdtempSync(path.join(os.tmpdir(),'nc-config-')),out=path.resolve(root,process.env.NEURAL_REVIEW_ARTIFACTS??'artifacts/configuration-review');
+import {openInstrumentedPage} from './browser-modules.mjs';
+const instrumented=Boolean(process.env.NODE_V8_COVERAGE);
+const root=path.resolve(import.meta.dirname,'..'),temp=instrumented?undefined:fs.mkdtempSync(path.join(os.tmpdir(),'nc-config-')),out=path.resolve(root,process.env.NEURAL_REVIEW_ARTIFACTS??(instrumented?'coverage/configuration-review':'artifacts/configuration-review'));
 fs.mkdirSync(out,{recursive:true});
-const core=JSON.parse(fs.readFileSync(path.join(root,'docs/core-candidate.json'))),archive=packWeb(),results={recordedAt:new Date().toISOString(),archiveSha256:createHash('sha256').update(fs.readFileSync(archive)).digest('hex'),core,browsers:[],humanScreenReaders:'PENDING MANUAL'};
+const core=JSON.parse(fs.readFileSync(path.join(root,'docs/core-candidate.json'))),archive=instrumented?undefined:packWeb(),results={recordedAt:new Date().toISOString(),archiveSha256:archive?createHash('sha256').update(fs.readFileSync(archive)).digest('hex'):undefined,core,browsers:[],humanScreenReaders:'PENDING MANUAL'};
 try {
+  let bundle;
+  if(temp){
   fs.writeFileSync(path.join(temp,'package.json'),JSON.stringify({name:'private-configuration-consumer',private:true,type:'module'}));
   const installed=spawnSync('npm',['install',archive,path.join(root,core.archive),'--offline','--ignore-scripts','--no-audit','--no-fund'],{cwd:temp,encoding:'utf8'});if(installed.status)throw Error(installed.stdout+installed.stderr);
-  const bundle=await build({stdin:{contents:"import{createChart,renderChartSvg}from'@neural-charts/web';globalThis.NC={createChart,renderChartSvg};globalThis.RECIPES="+JSON.stringify(webExtensions),resolveDir:temp},bundle:true,write:false,minify:true,format:'iife',platform:'browser'});
-  for(const [name,engine]of Object.entries({chromium,firefox,webkit})) {
+  bundle=await build({stdin:{contents:"import{createChart,renderChartSvg}from'@neural-charts/web';globalThis.NC={createChart,renderChartSvg};globalThis.RECIPES="+JSON.stringify(webExtensions),resolveDir:temp},bundle:true,write:false,minify:true,format:'iife',platform:'browser'});
+  }
+  for(const [name,engine]of Object.entries(instrumented?{chromium}:{chromium,firefox,webkit})) {
     const browser=await engine.launch();try {
       const page=await browser.newPage({viewport:{width:1200,height:1000},reducedMotion:'reduce'}),errors=[];page.on('pageerror',e=>errors.push(e.message));
-      await page.setContent('<!doctype html><html lang="en"><title>Configuration review</title><body><main><h1>Charts configuration</h1><div id="host" style="width:900px"></div></main></body></html>');await page.addScriptTag({content:bundle.outputFiles[0].text});
+      const markup='<main><h1>Charts configuration</h1><div id="host" style="width:900px"></div></main>';
+      let writeCoverage;
+      if(bundle){
+        await page.setContent('<!doctype html><html lang="en"><title>Configuration review</title><body>'+markup+'</body></html>');
+        await page.addScriptTag({content:bundle.outputFiles[0].text});
+      }else{
+        writeCoverage=await openInstrumentedPage(page,markup,'en');
+        await page.evaluate(async recipes=>{globalThis.NC=await import('/web/index.js');globalThis.RECIPES=recipes;},webExtensions);
+      }
       await page.evaluate(()=>{
         const check=(v,m)=>{if(!v)throw Error(m)},data={type:'line',axes:{x:{type:'linear'},y:{type:'linear'}},series:[{id:'s',name:'Revenue',data:Array.from({length:301},(_,i)=>({id:'p'+i,x:i,y:i%17===3?null:Math.sin(i/17)*2000}))}]};
         const options={title:'Revenue',description:'Original context',height:380,legend:{position:'right'},animation:{enabled:false},appearance:{markers:true,series:[{id:'s',color:'#9b3150',dash:'dashed',marker:'diamond'}]},formatting:{number:{style:'currency',currency:'EUR',maximumFractionDigits:1}},accessibility:{description:'Revenue by measurement. Gaps are missing data.',announceDataChanges:true,seriesDescriptions:[{id:'s',description:'Audited revenue'}],pointDescriptions:[{id:{seriesId:'s',pointId:'p0'},description:'Start of the reporting period'}]},responsive:[{maxWidth:430,options:{height:280,legend:{position:'bottom'},tooltip:{placement:'docked'},appearance:{markers:false}}}]};
@@ -78,6 +91,7 @@ try {
       }
       const longText=await page.evaluate(()=>{const host=document.getElementById('host'),recipe=RECIPES[0],checked=[];host.style.width='375px';for(const direction of ['ltr','rtl']){const data={...recipe.data,series:recipe.data.series.map((s,i)=>({...s,name:'W'.repeat(80)+' · '+i}))},r=NC.createChart(host,data,{...recipe.options,title:'W'.repeat(120),direction,width:375},{instanceId:'long-export'});if(r.status!=='ok')throw Error(JSON.stringify(r));const xml=new DOMParser().parseFromString(r.value.exportSvg(),'image/svg+xml'),svg=document.importNode(xml.documentElement,true);host.append(svg);const width=Number(svg.getAttribute('width')),height=Number(svg.getAttribute('height'));for(const text of svg.querySelectorAll('[data-export-header] text,[data-export-legend] text')){const b=text.getBBox();if(b.x<-.5||b.x+b.width>width+.5||b.y<-.5||b.y+b.height>height+.5)throw Error('Long export text clipped');}svg.remove();r.value.destroy();checked.push(direction);}return checked;});
       assert.deepEqual(errors,[]);results.browsers.push({name,version:browser.version(),sizes,audit,boundary,extensions,longText});fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(results,null,2));console.log('PASS configuration, accessibility, responsive and PNG cleanup: '+name);
+      await writeCoverage?.();
     }finally{await browser.close()}
   }
-}finally{fs.rmSync(temp,{recursive:true,force:true})}
+}finally{if(temp)fs.rmSync(temp,{recursive:true,force:true})}

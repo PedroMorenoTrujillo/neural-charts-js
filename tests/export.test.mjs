@@ -51,3 +51,26 @@ test('narrow horizontal value axes keep the true zero label for mixed signs', ()
   const data = { type: 'column', axes: { x: { type: 'category', values: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }] }, y: { type: 'linear' } }, series: [{ id: 's', name: 'S', data: [{ id: 'one', x: 'a', y: -50 }, { id: 'two', x: 'b', y: 50 }] }] };
   const result = renderChartSvg(data, { width: 375, layout: { orientation: 'horizontal' } }, { instanceId: 'zero' }); assert.equal(result.status, 'ok'); assert(result.value.includes('>0</text>'));
 });
+
+test('Export validation returns a diagnostic for unsupported settings or invalid source data', () => {
+  for (const options of [null, { delimiter: '\t' }, { bom: 'true' }]) {
+    const result = exportChartCsv(data, options);
+    assert.equal(result.status, 'invalid');
+    assert.equal(result.diagnostic.reason, 'INVALID_CSV_OPTIONS');
+  }
+  const table = exportChartCsv(data, { delimiter: ';', bom: false });
+  assert.equal(table.status, 'ok');
+  assert(!table.value.startsWith('\ufeff'));
+  assert.match(table.value, /";"/);
+  const malformed = null;
+  const describe = describeChartData(malformed);
+  assert.equal(describe.status, 'invalid');
+  assert.deepEqual(exportChartCsv(malformed), describe);
+
+  assert.equal(renderChartSvg(data, {}, undefined).diagnostic.reason, 'INVALID_INSTANCE_ID');
+  const waterfall = { type: 'waterfall', get data() { assert.fail('Source accessor executed'); } };
+  const result = renderChartSvg(waterfall, { appearance: { waterfall: { positiveColor: '#224488' } } }, { instanceId: 'waterfall-data' });
+  assert.equal(result.status, 'invalid');
+  assert.equal(result.diagnostic.reason, 'INVALID_DATA');
+  assert.equal(result.diagnostic.path, 'data');
+});

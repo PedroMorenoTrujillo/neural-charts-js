@@ -49,3 +49,43 @@ test('axis policies and legend policies validate and render without putting pres
   for(const legend of [{interactive:'false'},{reverse:1},{maxLabelCharacters:1},{itemSpacing:-1}])assert.equal(validateOptions({legend}).status,'invalid');
   for(const pattern of ['diagonal','dots','crosshatch'])assert.equal(validateOptions({appearance:{series:[{id:'s',pattern}]}}).status,'ok');assert.equal(validateOptions({appearance:{series:[{id:'s',pattern:'external'}]}}).status,'invalid');
 });
+
+test('configuration rejects malformed palettes, accessibility content and selection with actionable diagnostics', () => {
+  const point = { seriesId: 's', pointId: 'a' };
+  for (const [options, reason] of [
+    [{ legend: [] }, 'OBJECT_REQUIRED'],
+    [{ layout: 1 }, 'OBJECT_REQUIRED'],
+    [{ appearance: { colors: [] } }, 'HEX_PALETTE_REQUIRED'],
+    [{ appearance: { colors: Array(65).fill('#445577') } }, 'HEX_PALETTE_REQUIRED'],
+    [{ appearance: { bandColors: '#445577' } }, 'HEX_PALETTE_REQUIRED'],
+    [{ appearance: { points: [{ ...point, seriesId: '', color: '#445577' }] } }, 'INVALID_POINT_STYLE_ID'],
+    [{ appearance: { points: [{ ...point, pointId: 'p'.repeat(257), color: '#445577' }] } }, 'INVALID_POINT_STYLE_ID'],
+    [{ accessibility: { seriesDescriptions: [{ id: 's' }] } }, 'TEXT_REQUIRED'],
+    [{ accessibility: { seriesDescriptions: [{ id: '', description: 'Missing identity' }] } }, 'INVALID_SERIES_ID'],
+    [{ annotations: [{ id: 'missing-point', text: 'Missing point' }] }, 'ANNOTATION_IDENTITY_REQUIRED'],
+    [{ animation: { revision: -1 } }, 'INVALID_ANIMATION_REVISION'],
+    [{ animation: { revision: Number.MAX_SAFE_INTEGER + 1 } }, 'INVALID_ANIMATION_REVISION'],
+    [{ hiddenSeriesIds: 's' }, 'INVALID_HIDDEN_IDS'],
+    [{ hiddenSeriesIds: ['s', 3] }, 'INVALID_HIDDEN_IDS'],
+    [{ selectedPoints: point }, 'INVALID_SELECTION'],
+    [{ selectedPoints: [{ seriesId: 's' }] }, 'INVALID_SELECTION'],
+    [{ selectedPoints: [{ ...point, pointId: 3 }] }, 'INVALID_SELECTION'],
+    [{ referenceBandStyles: [{ id: 'missing', opacity: 0.4 }] }, 'INVALID_REFERENCE_BAND_STYLE_ID'],
+  ]) {
+    const result = validateOptions(options);
+    assert.equal(result.status, 'invalid', JSON.stringify(options));
+    assert.equal(result.diagnostic.reason, reason);
+  }
+  const options = {
+    appearance: { colors: Array(64).fill('#445577'), points: [{ ...point, color: '#445577' }] },
+    accessibility: { seriesDescriptions: [{ id: 's', description: 'Measurements' }] },
+    annotations: [{ id: 'first', point, text: 'First reading', dx: -5, dy: 0 }],
+    animation: { revision: Number.MAX_SAFE_INTEGER },
+    hiddenSeriesIds: [],
+    selectedPoints: [point],
+  };
+  const result = validateOptions(options);
+  assert.equal(result.status, 'ok');
+  assert.deepEqual(result.value.selectedPoints, [point]);
+  assert(Object.isFrozen(result.value.selectedPoints[0]));
+});

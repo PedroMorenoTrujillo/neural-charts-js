@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 import { chromium } from '@playwright/test';
+import { openInstrumentedPage } from './browser-modules.mjs';
 
-const bundle = await build({
+const bundle = process.env.NODE_V8_COVERAGE ? undefined : await build({
   absWorkingDir: fileURLToPath(new URL('../', import.meta.url)),
   entryPoints: ['src/panels.ts'], bundle: true, write: false, format: 'iife',
   platform: 'browser', globalName: 'panels',
@@ -13,8 +14,15 @@ try {
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.setContent('<main id="host" style="width:960px"></main>');
-  await page.addScriptTag({ content: bundle.outputFiles[0].text });
+  const markup = '<main id="host" style="width:960px"></main>';
+  let writeCoverage;
+  if (bundle) {
+    await page.setContent(markup);
+    await page.addScriptTag({ content: bundle.outputFiles[0].text });
+  } else {
+    writeCoverage = await openInstrumentedPage(page, markup);
+    await page.evaluate(async () => { globalThis.panels = await import('/web/panels.js'); });
+  }
   const results = await page.evaluate(() => {
     const host = document.getElementById('host');
     const found = [];
@@ -109,7 +117,72 @@ try {
     assert.deepEqual(result.visibility, [{ panelId: 'left', hiddenSeriesIds: ['target'] }]);
     assert.deepEqual(result.diagnostics, []);
   }
+  const atomic = await page.evaluate(() => {
+    const host = document.getElementById('host');
+    const ids = ['a', 'b', 'c', 'd', 'e'];
+    const chart = {
+      type: 'line',
+      axes: { x: { type: 'category', values: ids.map(id => ({ id, label: id })) }, y: { type: 'linear', domain: [0, 100] } },
+      series: [{ id: 'sales', name: 'Sales', data: ids.map((id, i) => ({ id, x: id, y: i * 20 })) }],
+    };
+    const badChart = { ...chart, series: [{ ...chart.series[0], data: [{ id: 'a', x: 'a', y: 'broken' }] }] };
+    const options = { chart: { height: 230, viewport: { axes: 'xy' } } };
+    const link = { id: 'shared', axis: 'x', panelIds: ['left', 'right'] };
+    const data = { panels: ['left', 'right'].map(id => ({ id, data: chart })), viewportLinks: [link] };
+    const invalid = { ...data, panels: [data.panels[0], { ...data.panels[1], data: badChart }] };
+    const first = panels.createChartPanels(host, invalid, options, { instanceId: 'bad-child' });
+    const emptyAfterFailure = host.childElementCount === 0;
+    const events = [];
+    const mounted = panels.createChartPanels(host, data, options, {
+      instanceId: 'stable-children', onViewportChange: event => events.push(event),
+    });
+    if (mounted.status !== 'ok') throw Error(JSON.stringify(mounted.diagnostic));
+    const control = mounted.value;
+    const surfaces = [...host.querySelectorAll('[data-nc-panel]')];
+    const x = { firstId: 'b', lastId: 'd' };
+    const zoomed = control.setViewport('left', { x, y: [25, 85] });
+    const badViewport = control.setViewport('left', { x: { firstId: 'missing', lastId: 'd' } });
+    const unknown = control.setViewport('missing', { x });
+    const rejected = control.update(invalid);
+    const updateWasAtomic = surfaces.every((surface, index) => host.querySelectorAll('[data-nc-panel]')[index] === surface);
+    const preservedAfterFailure = ['left', 'right'].map(id => control.getViewport(id).x);
+    const shifted = { ...chart, axes: { ...chart.axes, y: { type: 'linear', domain: [-10, 110] } } };
+    const changedDomain = control.update({
+      ...data, panels: [{ ...data.panels[0], data: shifted }, data.panels[1]],
+    });
+    const resetY = control.getViewport('left').y;
+    const preservedX = control.getViewport('left').x;
+    const unlinked = control.update({ panels: [{ id: 'single', data: chart }] }, { chart: { height: 230 } });
+    const noViewport = control.setViewport('single', { x });
+    const unmounted = !host.querySelector('[data-nc-panel="right"]') && !control.getViewport('right');
+    control.destroy();
+    control.destroy();
+    return { first: first.status, emptyAfterFailure, zoomed: zoomed.status, badViewport: badViewport.status,
+      unknown: unknown.diagnostic.reason, rejected: rejected.status, updateWasAtomic, preservedAfterFailure,
+      changedDomain: changedDomain.status, resetY, preservedX, unlinked: unlinked.status, unmounted,
+      noViewport: noViewport.diagnostic.reason, afterDestroy: control.update(data).diagnostic.reason,
+      afterDestroyViewport: control.setViewport('left', { x }).diagnostic.reason, events, x,
+    };
+  });
+  assert.equal(atomic.first, 'invalid');
+  assert(atomic.emptyAfterFailure);
+  assert.equal(atomic.zoomed, 'ok');
+  assert.equal(atomic.badViewport, 'invalid');
+  assert.equal(atomic.unknown, 'UNKNOWN_PANEL');
+  assert.equal(atomic.rejected, 'invalid');
+  assert(atomic.updateWasAtomic);
+  assert.deepEqual(atomic.preservedAfterFailure, [atomic.x, atomic.x]);
+  assert.equal(atomic.changedDomain, 'ok');
+  assert.equal(atomic.resetY, undefined);
+  assert.deepEqual(atomic.preservedX, atomic.x);
+  assert.equal(atomic.unlinked, 'ok');
+  assert(atomic.unmounted);
+  assert.equal(atomic.noViewport, 'VIEWPORT_UNAVAILABLE');
+  assert.equal(atomic.afterDestroy, 'DESTROYED');
+  assert.equal(atomic.afterDestroyViewport, 'DESTROYED');
+  assert.equal(atomic.events.length, 1);
   assert.deepEqual(errors, []);
+  await writeCoverage?.('panels.js');
   console.log('Category, numeric and time panel linkage, independent visibility/Y, validation and teardown passed in Chromium.');
 } finally {
   await browser.close();

@@ -8,7 +8,7 @@ import { themeTokens } from './theme.js';
 import { componentDash } from './component-lines.js';
 import { axisLabelLines, axisLabelIndices } from './axis-labels.js';
 import { cellTextOnSurface, textColorOnSurface } from './text-contrast.js';
-import {observationBars, observationDetails, observationShape} from './observation-shape.js';
+import {intervalLabelBounds, observationBars, observationDetails, observationShape} from './observation-shape.js';
 import {pointColors, seriesStyles, markerElement, markerPaint, patternDefinition} from './series-style.js';
 import {contentText,titleContext} from './content.js';
 import type {ChartContentPorts,ChartSvgContentTargets,ChartAxisLabelContext,ChartDataLabelContext} from './content.js';
@@ -370,6 +370,7 @@ export function chartSvg(frame: PlanFrame, options: ChartOptions, instanceId: st
   const chosen = new Set(selection.map(pointKey));
   const hasValueAnnotations = frame.annotations?.some(annotation => annotation.role === 'value') === true;
   const barLabels = new Map<string, PlanBar>();
+  const intervalLabels = family === 'xrange' && appearance?.dataLabels ? intervalLabelBounds(frame) : undefined;
   if (intervalOverlay && appearance?.dataLabels) {
     for (const series of frame.series) for (const bar of series.bars ?? []) {
       if (bar.pointId !== undefined) barLabels.set(pointKey({seriesId: series.id, pointId: bar.pointId}), bar);
@@ -410,17 +411,21 @@ export function chartSvg(frame: PlanFrame, options: ChartOptions, instanceId: st
         : (o.valueAxis === 'secondary' ? secondaryValue : primaryValue)(o.value);
       const fill = cell ? tileText(cell.color, cell.opacity) : family === 'treemap' ? tileText(paint) : muted;
       if (intervalOverlay) {
-        const bar = barLabels.get(key);
+        const progress = barLabels.get(key);
+        const bar = intervalLabels ? intervalLabels.get(o.id.seriesId)?.get(o.id.pointId) : progress;
         const textWidth = Array.from(value).length * 7 + 10;
         const interval = family === 'xrange' && o.interval && o.interval.duration > 0;
-        const inside = bar && bar.height >= 20 &&
-          o.x - textWidth / 2 >= bar.x && o.x + textWidth / 2 <= bar.x + bar.width;
+        const labelLeft = o.x - textWidth / 2, labelRight = o.x + textWidth / 2;
+        const inside = bar && bar.height >= 20 && labelLeft >= bar.x && labelRight <= bar.x + bar.width;
         if ((flame || interval) && !inside) continue;
         const y = inside ? bar.y + bar.height / 2 + 4 :
           max(-top + 13, min(frame.height + 14, min(o.y, bar?.y ?? o.y) - 8));
         const x = max(-left + textWidth / 2, min(frame.width + inset.right - textWidth / 2, o.x));
-        const fill = inside ? tileText(paint) : muted;
-        uncutLabels += `<g data-label="" pointer-events="none">${dataLabel(value, i, x, y, fill, !inside, true, {observation: o})}</g>`;
+        const onFill = progress && labelLeft >= progress.x && labelRight <= progress.x + progress.width;
+        const spansFillEdge = interval && progress && !onFill &&
+          labelLeft < progress.x + progress.width && labelRight > progress.x;
+        const fill = inside ? interval && !onFill ? ink : tileText(paint) : muted;
+        uncutLabels += `<g data-label="" pointer-events="none">${dataLabel(value, i, x, y, fill, !inside || !!spansFillEdge, true, {observation: o})}</g>`;
       } else svg += `<g data-label="">${dataLabel(value, i, o.x, o.y + (cell ? 4 : -12), fill, !cell && family !== 'treemap', true, {observation: o})}</g>`;
     }
   }
