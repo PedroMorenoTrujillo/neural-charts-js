@@ -8,7 +8,7 @@ import { themeTokens } from './theme.js';
 import { componentDash } from './component-lines.js';
 import { axisLabelLines, axisLabelIndices } from './axis-labels.js';
 import { cellTextOnSurface, textColorOnSurface } from './text-contrast.js';
-import {intervalLabelBounds, observationBars, observationDetails, observationShape} from './observation-shape.js';
+import {intervalLabelBounds, markerFocusShape, observationBars, observationCircles, observationDetails, observationShape} from './observation-shape.js';
 import {pointColors, seriesStyles, markerElement, markerPaint, patternDefinition} from './series-style.js';
 import {contentText,titleContext} from './content.js';
 import type {ChartContentPorts,ChartSvgContentTargets,ChartAxisLabelContext,ChartDataLabelContext} from './content.js';
@@ -370,7 +370,7 @@ export function chartSvg(frame: PlanFrame, options: ChartOptions, instanceId: st
   const chosen = new Set(selection.map(pointKey));
   const hasValueAnnotations = frame.annotations?.some(annotation => annotation.role === 'value') === true;
   const barLabels = new Map<string, PlanBar>();
-  const intervalLabels = family === 'xrange' && appearance?.dataLabels ? intervalLabelBounds(frame) : undefined;
+  const intervalLabels = family === 'xrange' && (appearance?.dataLabels || active || selection.length) ? intervalLabelBounds(frame) : undefined;
   if (intervalOverlay && appearance?.dataLabels) {
     for (const series of frame.series) for (const bar of series.bars ?? []) {
       if (bar.pointId !== undefined) barLabels.set(pointKey({seriesId: series.id, pointId: bar.pointId}), bar);
@@ -379,21 +379,35 @@ export function chartSvg(frame: PlanFrame, options: ChartOptions, instanceId: st
   const emphasisBars = active || selection.length
     ? new Map(frame.series.filter(series => series.bars).map(series => [series.id, observationBars(series.bars)]))
     : undefined;
+  const emphasisCircles = active || selection.length
+    ? new Map(frame.series.filter(series => series.circles).map(series => [series.id, observationCircles(series.circles)]))
+    : undefined;
   const emphasisDetail = active || selection.length ? observationDetails(frame) : undefined;
   let uncutLabels = '';
   if (markers || selection.length || active || appearance?.dataLabels) for (const [i, o] of frame.observations.entries()) {
     const key = pointKey(o.id), emphasized = chosen.has(key) || samePoint(active, o.id);
     const paint = escapeXml(colorsByPoint.get(key) ?? color(o.id.seriesId, o.color));
-    const selectedShape = emphasized && observationShape(o, emphasisBars?.get(o.id.seriesId)?.get(o.id.pointId));
     const detail = emphasized ? emphasisDetail?.(o) : undefined;
+    const circle = emphasized ? emphasisCircles?.get(o.id.seriesId)?.get(o.id.pointId) : undefined;
+    const style = styles.get(o.id.seriesId);
+    const bar = intervalLabels?.get(o.id.seriesId)?.get(o.id.pointId) ?? emphasisBars?.get(o.id.seriesId)?.get(o.id.pointId);
+    const selectedShape = emphasized && (family === 'scatter' && circle && style
+      ? markerFocusShape(circle.cx, circle.cy, style.markerRadius ?? circle.radius, style.marker)
+      : observationShape(o, bar, circle));
     if (detail?.type === 'range') {
       const {top, bottom} = detail;
       for (const y of top === bottom ? [top] : [top, bottom]) {
         svg += `<circle data-observation="${i}" ${circleGeometry(o.x, y, 5)} fill="${background}" stroke="${paint}" stroke-width="2.5"/>`;
       }
-    } else if (detail?.type === 'price') {
-      const d = pathData(detail.commands);
-      svg += `<path d="${d}" fill="none" stroke="${background}" stroke-width="5"/><path data-observation="${i}" d="${d}" fill="none" stroke="${paint}" stroke-width="2.5"/>`;
+    } else if (detail?.type === 'stroke') {
+      if (detail.commands.length) {
+        const d = pathData(detail.commands);
+        svg += `<path d="${d}" fill="none" stroke="${background}" stroke-width="5"/><path data-observation="${i}" d="${d}" fill="none" stroke="${paint}" stroke-width="2.5" stroke-linecap="round"/>`;
+      }
+      if (detail.filled?.length) svg += `<path d="${pathData(detail.filled)}" fill="${paint}" stroke="${background}" stroke-width="1.5" paint-order="stroke"/>`;
+      for (const circle of detail.circles ?? []) {
+        svg += `<circle data-observation="${i}" ${circleGeometry(circle.cx, circle.cy, circle.radius)} fill="${background}" stroke="${paint}" stroke-width="2.5"/>`;
+      }
     } else if (selectedShape) {
       const attrs = Object.entries(selectedShape.attributes).map(([key,value]) => key + '="' + String(value) + '"').join(' ');
       svg += `<${selectedShape.tag} data-observation="${i}" ${attrs} fill="none" stroke="${ink}" stroke-width="2.5"/>`;
@@ -401,7 +415,6 @@ export function chartSvg(frame: PlanFrame, options: ChartOptions, instanceId: st
       const commands = frame.series.find(s => s.id === o.id.seriesId)?.commands;
       if (commands) svg += `<path d="${pathData(commands)}" fill="none" stroke="${paint}" stroke-width="2.5"/>`;
     } else if ((markers && (!mixedMarkerSeries || mixedMarkerSeries.has(o.id.seriesId))) || emphasized) {
-      const style = styles.get(o.id.seriesId);
       const attributes = emphasized ? `fill="${o.heatmap ? 'none' : background}" stroke="${o.heatmap ? ink : paint}" stroke-width="2.5"` : markerPaint(style, paint, paint);
       svg += markerElement(style?.marker, o.x, o.y, emphasized ? 6 : style?.markerRadius ?? appearance?.markerRadius ?? 3, `data-observation="${i}" ${attributes}`);
     }

@@ -30,7 +30,8 @@ import {ownContent,contentKeys,contentText,titleContext,legendContext} from './c
 import type {ChartContentPorts,ChartContentKey,ChartContentFor,ChartContentHost,ChartSvgContentTargets,ChartAxisLabelContext,ChartDataLabelContext,ChartTooltipContext,ChartTooltipRow} from './content.js';
 import {createDomContentOwner} from './dom-content.js';
 import {ensureChartStyles} from './styles.js';
-import {observationBars, observationDetails, observationShape} from './observation-shape.js';
+import {intervalLabelBounds, markerFocusShape, observationBars, observationCircles, observationDetails, observationShape} from './observation-shape.js';
+import {prepareContinuousHover} from './continuous-hover.js';
 import {horizontalViewportScroll, viewportZoomLevel} from './viewport-scroll.js';
 
 const exactPointerFamilies = new Set(['pie', 'donut', 'variablepie', 'sunburst', 'heatmap', 'tilemap', 'treemap', 'flame']);
@@ -99,6 +100,7 @@ export function createChartWithPlanner(planner: ChartPlanner, host: HTMLElement,
   const index = new Map<number, Map<number, number[]>>();
   const observationIndices = new Map<string, number>();
   let regionHit: ReturnType<typeof preparePlanRegionHit>;
+  let continuousHover: ReturnType<typeof prepareContinuousHover> | null;
   const observationGroups = new Map<string, PlanObservation[]>();
   const navigationSeries = new Map<string, PlanObservation[]>();
   const navigationUngrouped = new Map<string, PlanObservation>();
@@ -111,6 +113,7 @@ export function createChartWithPlanner(planner: ChartPlanner, host: HTMLElement,
   const interactionIndices = [index, observationIndices, observationsBySyncKey, observationGroups, navigationSeries, navigationUngrouped];
   function clearInteractionIndices(): void {
     for (const index of interactionIndices) index.clear();
+    continuousHover = undefined;
   }
   const syncKey = (o: PlanObservation, fallback?: string) => o.group?.key ?? (o.xValue !== undefined ? 'x:' + o.xValue : fallback ?? pointKey(o.id));
   const publishActive = () => { const o = point(); channel?.emit(o ? { id: o.id, key: syncKey(o) } : undefined); };
@@ -164,9 +167,12 @@ export function createChartWithPlanner(planner: ChartPlanner, host: HTMLElement,
   const plotElement = () => drawing.firstElementChild as SVGSVGElement | null;
   let inset: ReturnType<typeof plotBounds>;
   let focusLayer: SVGGElement | undefined;
-  let barFocusFrame: PlanFrame | undefined;
+  let focusFrame: PlanFrame | undefined;
   let focusDetail: ReturnType<typeof observationDetails>;
-  const barFocusBySeries = new Map<string, Map<string, import('@neural-charts/core').PlanBar>>();
+  let intervalFocus: ReturnType<typeof intervalLabelBounds> | undefined;
+  const focusBySeries = new Map<string, {
+    bars: ReturnType<typeof observationBars>; circles: ReturnType<typeof observationCircles>;
+  }>();
   const scrollports: {node: HTMLElement; x: boolean; y: boolean}[] = [];
   function observationForKey(key: string): PlanObservation | undefined {
     const position = observationIndices.get(key);
@@ -180,6 +186,14 @@ export function createChartWithPlanner(planner: ChartPlanner, host: HTMLElement,
     if(destroyed)return;
     if (parsed.querySelector('parsererror')) throw Error('INVALID_SERIALIZED_SVG');
     const next = doc.importNode(parsed.documentElement, true), paths = new Map<readonly import('@neural-charts/core').PlanCommand[], SVGPathElement[]>();
+    // Keep the accessible SVG name without showing a native title over the data tooltip.
+    const svgTitle = next.firstElementChild!;
+    const svgDescription = svgTitle.nextElementSibling!;
+    next.id = svgTitle.id;
+    next.setAttribute('aria-label', svgTitle.textContent ?? '');
+    next.removeAttribute('aria-labelledby');
+    if (svgDescription.textContent) next.setAttribute('aria-describedby', svgDescription.id);
+    svgTitle.remove();
     for (const placeholder of next.querySelectorAll<SVGPathElement>('path[data-nc-path]')) {
       const resource = resources.get(placeholder.getAttribute('data-nc-path')!); if (!resource) throw Error('MISSING_PATH_RESOURCE');
       const previous = resource.reusable ? renderedPaths.get(resource.commands)?.shift() : undefined;
@@ -204,24 +218,32 @@ export function createChartWithPlanner(planner: ChartPlanner, host: HTMLElement,
     for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, String(value));
     return node;
   }
-  function focusBar(seriesId: string, pointId: string) {
-    if (barFocusFrame !== frame) {
-      barFocusBySeries.clear();
-      barFocusFrame = frame;
+  function focusShape(o: PlanObservation) {
+    if (focusFrame !== frame) {
+      focusBySeries.clear();
+      focusFrame = frame;
       focusDetail = observationDetails(frame);
+      intervalFocus = frame.family === 'xrange' ? intervalLabelBounds(frame) : undefined;
     }
-    let bars = barFocusBySeries.get(seriesId);
-    if (!bars) {
+    const {seriesId, pointId} = o.id;
+    let geometry = focusBySeries.get(seriesId);
+    if (!geometry) {
       const series = frame.series.find(item => item.id === seriesId);
-      bars = observationBars(series?.bars);
+      const bars = observationBars(series?.bars);
       for (const part of series?.parts ?? []) {
         for (const bar of part.bars ?? []) {
           if (bar.pointId !== undefined && !bars.has(bar.pointId)) bars.set(bar.pointId, bar);
         }
       }
-      barFocusBySeries.set(seriesId, bars);
+      geometry = {bars, circles:observationCircles(series?.circles)};
+      focusBySeries.set(seriesId, geometry);
     }
-    return bars.get(pointId);
+    const circle = geometry.circles.get(pointId);
+    const style = styles.get(seriesId);
+    if (frame.family === 'scatter' && circle && style) {
+      return markerFocusShape(circle.cx, circle.cy, style.markerRadius ?? circle.radius, style.marker);
+    }
+    return observationShape(o, intervalFocus?.get(seriesId)?.get(pointId) ?? geometry.bars.get(pointId), circle);
   }
   function overlay(): void {
     const layer = focusLayer;
@@ -238,35 +260,43 @@ export function createChartWithPlanner(planner: ChartPlanner, host: HTMLElement,
     const chosen = new Set(selection.map(pointKey));
     if (active) chosen.add(pointKey(active));
     for (const key of chosen) { const o = observationForKey(key); if (!o) continue;
-      const bar = focusBar(o.id.seriesId, o.id.pointId);
+      const projected = focusShape(o);
       const commands = family === 'gauge' ? frame.series.find(series => series.id === o.id.seriesId)?.commands : undefined;
-      const shape = commands ? {tag:'path' as const, attributes:{d:pathData(commands)}} : observationShape(o, bar);
+      const shape = commands ? {tag:'path' as const, attributes:{d:pathData(commands)}} : projected;
       const paint = o.heatmap || family === 'treemap' ? themeTokens(options).foreground
         : colorsByPoint.get(key) ?? seriesColor(o.id.seriesId, o.color);
       const surface = themeTokens(options).background;
       const detail = focusDetail?.(o);
       if (detail?.type === 'range') {
         const {top, bottom} = detail;
+        if (top !== bottom) {
+          const line = {x1:o.x, x2:o.x, y1:top, y2:bottom};
+          layer.append(svgElement('line', {...line, stroke:surface, 'stroke-width':5}));
+          layer.append(svgElement('line', {...line, 'data-range-focus':'', stroke:paint, 'stroke-width':2.5}));
+        }
         for (const y of top === bottom ? [top] : [top, bottom]) {
           layer.append(svgElement('circle', {cx:o.x, cy:y, r:5, fill:surface, stroke:paint, 'stroke-width':2.5}));
         }
-      } else if (detail?.type === 'price') {
-        const path = {d:pathData(detail.commands), fill:'none'};
-        layer.append(svgElement('path', {...path, stroke:surface, 'stroke-width':5}));
-        layer.append(svgElement('path', {...path, stroke:paint, 'stroke-width':2.5}));
+      } else if (detail?.type === 'stroke') {
+        if (detail.commands.length) {
+          const path = {d:pathData(detail.commands), fill:'none'};
+          layer.append(svgElement('path', {...path, stroke:surface, 'stroke-width':5}));
+          layer.append(svgElement('path', {...path, 'data-stroke-focus':'', stroke:paint, 'stroke-width':2.5, 'stroke-linecap':'round'}));
+        }
+        if (detail.filled?.length) {
+          layer.append(svgElement('path', {d:pathData(detail.filled), fill:paint, stroke:surface, 'stroke-width':1.5, 'paint-order':'stroke'}));
+        }
+        for (const circle of detail.circles ?? []) {
+          layer.append(svgElement('circle', {cx:circle.cx, cy:circle.cy, r:circle.radius, fill:surface, stroke:paint, 'stroke-width':2.5}));
+        }
       } else if (shape) {
         layer.append(svgElement(shape.tag, {...shape.attributes, fill: commands ? 'none' : surface,
           'fill-opacity': .16, stroke: paint, 'stroke-width': 3, 'stroke-linejoin': 'round'}));
         layer.append(svgElement(shape.tag, {...shape.attributes, fill: 'none', stroke: surface, 'stroke-width': 1.5}));
       } else {
         const style = styles.get(o.id.seriesId);
-        const tag = style?.marker === 'square' ? 'rect' : style?.marker === 'triangle' || style?.marker === 'diamond' ? 'polygon' : 'circle';
         const r = Math.max(5, Math.min(12, (style?.markerRadius ?? options.appearance?.markerRadius ?? 3) + 2));
-        const {x,y} = o;
-        const attributes: Record<string, number | string> = tag === 'rect' ? {x:x-r,y:y-r,width:r*2,height:r*2}
-          : style?.marker === 'triangle' ? {points:`${x},${y-r} ${x+r},${y+r} ${x-r},${y+r}`}
-          : tag === 'polygon' ? {points:`${x},${y-r} ${x+r},${y} ${x},${y+r} ${x-r},${y}`}
-          : {cx:x,cy:y,r};
+        const {tag, attributes} = markerFocusShape(o.x, o.y, r, style?.marker);
         layer.append(svgElement(tag, {...attributes, fill:surface, stroke:paint, 'stroke-width':2.5}));
       }
     }
@@ -737,7 +767,7 @@ export function createChartWithPlanner(planner: ChartPlanner, host: HTMLElement,
     return result;
   }
   gestures = viewportInput(drawing, () => ({ frame, options }), applyViewport, () => { motion.cancel(); if (!pinned) {detail.hidden = true;releaseContent(detail);} });
-  function locate(e: PointerEvent): PlanObservation | undefined {
+  function locate(e: PointerEvent, snapToSeries = false): PlanObservation | undefined {
     const region = frame.family === 'venn' || frame.family === 'pictorial';
     const target = e.target as Element;
     const observation = region ? null : target?.getAttribute?.('data-observation');
@@ -745,6 +775,7 @@ export function createChartWithPlanner(planner: ChartPlanner, host: HTMLElement,
     // A filled region uses its exact SVG target. Blank space is not a datum.
     if (exactPointerFamilies.has(frame.family)) return;
     const box = plotElement()!.getBoundingClientRect();
+    if (!box.width || !box.height) return;
     const x = (e.clientX - box.left) * inset.width / box.width - inset.left, y = (e.clientY - box.top) * inset.height / box.height - inset.top;
     if (region) return regionHit?.query(x, y);
     if (frame.family === 'contour') {
@@ -761,6 +792,10 @@ export function createChartWithPlanner(planner: ChartPlanner, host: HTMLElement,
         ]}};
       })});
       return regionHit?.query(x, y);
+    }
+    if (snapToSeries) {
+      if (continuousHover === undefined) continuousHover = prepareContinuousHover(frame) ?? null;
+      if (continuousHover) return continuousHover(x, y);
     }
     let best: PlanObservation | undefined, distance = 32 * 32;
     const cellX = Math.floor(x / 32), cellY = Math.floor(y / 32);
@@ -787,7 +822,7 @@ export function createChartWithPlanner(planner: ChartPlanner, host: HTMLElement,
   }
   const move = (e: PointerEvent) => {
     if (e.pointerType === 'touch' || destroyed || gestures?.active()) return;
-    const next = locate(e)?.id;
+    const next = locate(e, true)?.id;
     if (next === active || samePoint(active, next)) return;
     active = next;
     refreshInteraction();
@@ -1097,6 +1132,6 @@ export function createChartWithPlanner(planner: ChartPlanner, host: HTMLElement,
     exportSvg(settings={}){return serialize(settings);},
     exportCsv: settings => destroyed ? invalid('DESTROYED') : exportChartCsv(data, settings),
     exportPng,
-    destroy() { if (destroyed) return; destroyed = true;domContent?.destroy();domContent=undefined;content=undefined;contentReference=undefined;contentErrors.clear();tablePage = undefined; focusLayer = undefined; barFocusFrame = undefined; focusDetail = undefined; barFocusBySeries.clear(); renderedPaths.clear(); gestures?.destroy(); motion.destroy(); channel?.leave(); exports.forEach(controller => controller.abort()); exports.clear(); observer.disconnect(); if (raf) win.cancelAnimationFrame(raf); if (scrollFrame) win.cancelAnimationFrame(scrollFrame); removeListeners(); win.removeEventListener('scroll', scrollDetail); win.removeEventListener('resize', scrollDetail); clearInteractionIndices(); regionHit = undefined; seriesRanks = new Uint32Array(0); navigationGroups = [];root.remove();for(const element of [drawing,legend,detail,table,plotRegion,chartArea,root])element.replaceChildren();mount=Object.freeze({instanceId:id}); },
+    destroy() { if (destroyed) return; destroyed = true;domContent?.destroy();domContent=undefined;content=undefined;contentReference=undefined;contentErrors.clear();tablePage = undefined; focusLayer = undefined; focusFrame = undefined; focusDetail = undefined; intervalFocus = undefined; focusBySeries.clear(); renderedPaths.clear(); gestures?.destroy(); motion.destroy(); channel?.leave(); exports.forEach(controller => controller.abort()); exports.clear(); observer.disconnect(); if (raf) win.cancelAnimationFrame(raf); if (scrollFrame) win.cancelAnimationFrame(scrollFrame); removeListeners(); win.removeEventListener('scroll', scrollDetail); win.removeEventListener('resize', scrollDetail); clearInteractionIndices(); regionHit = undefined; seriesRanks = new Uint32Array(0); navigationGroups = [];root.remove();for(const element of [drawing,legend,detail,table,plotRegion,chartArea,root])element.replaceChildren();mount=Object.freeze({instanceId:id}); },
   } };
 }

@@ -308,6 +308,95 @@ try {
   assert.deepEqual(failures.dimensions, [12, 8]);
   assert.deepEqual(failures.pixel, [161, 115, 69, 255]);
 
+  for (const [family, id] of [
+    ['vector', 'basic'], ['vector', 'zero'], ['windbarb', 'basic'], ['windbarb', 'unknown'],
+    ['timeline', 'basic'], ['xrange', 'basic'], ['lollipop', 'basic'], ['dumbbell', 'basic'],
+    ['errorbar', 'basic'], ['item', 'basic'],
+  ]) {
+    const recipe = recipes.find(item => item.family === family && item.id === id);
+    assert.ok(recipe, family + '/' + id);
+    const points = await page.evaluate(async item => {
+      chart.destroy();
+      const { createChart } = await import('/web/index.js');
+      const result = createChart(document.querySelector('#chart'), item.data, {
+        ...item.options, locale: 'es', animation: { enabled: false },
+      }, { instanceId: 'glyph-' + item.family });
+      if (result.status !== 'ok') throw Error(JSON.stringify(result.diagnostic));
+      window.chart = result.value;
+      const frame = chart.getFrame();
+      const marks = document.querySelector('[data-layer="marks"]');
+      return frame.observations.slice(0, 16).map(point => {
+        const position = new DOMPoint(point.x, point.y).matrixTransform(marks.getScreenCTM());
+        const circle = frame.series.find(series => series.id === point.id.seriesId).circles?.find(mark => mark.pointId === point.id.pointId);
+        return { x: position.x, y: position.y, label: point.label, radius: circle?.radius };
+      });
+    }, recipe);
+    const image = root.getByRole('img');
+    assert.equal(await image.getAttribute('aria-label'), recipe.options.title);
+    assert.equal(await image.locator(':scope > title').count(), 0);
+    if (recipe.options.description) assert.match(await image.getAttribute('aria-describedby'), /-svg-desc$/);
+    for (const point of points) {
+      await page.mouse.move(point.x, point.y);
+      const tooltip = root.getByRole('tooltip');
+      assert.ok(await tooltip.isVisible(), family + '/' + id + ' ' + point.label);
+      assert.ok((await tooltip.innerText()).includes(point.label), family + '/' + id + ' ' + point.label);
+      const focus = root.locator('[data-layer="focus"]');
+      if (['vector', 'windbarb', 'lollipop', 'dumbbell', 'errorbar'].includes(family)) {
+        const endpoints = family === 'lollipop' ? 1 : family === 'dumbbell' ? 2 : 0;
+        assert.equal(await focus.locator('circle').count(), endpoints);
+        assert.equal(await focus.locator('polygon').count(), 0);
+        const path = await focus.locator('[data-stroke-focus]').getAttribute('d');
+        assert.match(path, /^M.+[LA]/);
+      } else if (family === 'timeline') {
+        assert.equal(Number(await focus.locator('circle').first().getAttribute('r')), point.radius);
+      } else if (family === 'item') {
+        assert.ok(await focus.locator('circle').count() > 1);
+      } else {
+        const box = await focus.locator('rect').first().getAttribute('width');
+        assert.ok(Number(box) > 0);
+      }
+    }
+  }
+
+  for (const family of ['line', 'areasplinerange']) {
+    const recipe = recipes.find(item => item.family === family && item.id === 'basic');
+    assert.ok(recipe, family);
+    const targets = await page.evaluate(async item => {
+      chart.destroy();
+      const { createChart } = await import('/web/index.js');
+      const result = createChart(document.querySelector('#chart'), item.data, {
+        ...item.options, locale: 'es', animation: { enabled: false }, height: 380,
+      }, { instanceId: 'hover-' + item.family });
+      if (result.status !== 'ok') throw Error(JSON.stringify(result.diagnostic));
+      window.chart = result.value;
+      const frame = chart.getFrame();
+      const points = frame.observations.filter(point => point.id.seriesId === frame.observations[0].id.seriesId);
+      const point = points[3];
+      const along = point.x + (points[4].x - point.x) * .42;
+      const matrix = document.querySelector('[data-layer="marks"]').getScreenCTM();
+      const target = (x, y) => new DOMPoint(x, y).matrixTransform(matrix).toJSON();
+      const edge = frame.series[0].commands.filter(command => 'x' in command && command.x === point.x).map(command => command.y);
+      return {
+        between: target(along, point.y), far: target(point.x, Math.min(...edge)),
+        outside: target(point.x, frame.height + 2), point,
+      };
+    }, recipe);
+    await page.mouse.move(targets.between.x, targets.between.y);
+    const tooltip = root.getByRole('tooltip');
+    assert.ok(await tooltip.isVisible(), family + ' tooltip between two observations');
+    assert.match(await tooltip.innerText(), new RegExp(targets.point.label));
+    if (family === 'areasplinerange') {
+      await page.mouse.move(targets.far.x, targets.far.y);
+      assert.ok(await tooltip.isVisible(), 'Tooltip follows the interval up to its upper limit');
+      assert.match(await tooltip.innerText(), new RegExp(String(targets.point.lowValue) + '.*' + targets.point.highValue));
+      const marker = root.locator('[data-layer="focus"]');
+      assert.equal(await marker.locator('circle').count(), 2, 'Both original interval endpoints are highlighted');
+      assert.equal(await marker.locator('[data-range-focus]').count(), 1);
+    }
+    await page.mouse.move(targets.outside.x, targets.outside.y);
+    assert.equal(await tooltip.isVisible(), false, family + ' plot boundary clears hover');
+  }
+
   const animationCases = [
     ['column', 'transform', /^scaleY\(0\)$/],
     ['pie', 'clipPath', /^circle\(0%\)$/],
