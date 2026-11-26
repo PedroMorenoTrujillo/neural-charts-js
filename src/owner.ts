@@ -552,9 +552,16 @@ export function createChartWithPlanner(planner: ChartPlanner, host: HTMLElement,
     if (changed || drawingKey !== lastDrawing) { draw(); lastDrawing = drawingKey; }
     if(destroyed)return;
     const svg = plotElement();
-    if (svg) svg.style.maxWidth = scrollable ? 'none' : '100%';
-    const svgTitle = svg?.querySelector('title'), svgDescription = svg?.querySelector('desc');
-    if (svgTitle) svgTitle.textContent = titleText; if (svgDescription) svgDescription.textContent = options.accessibility?.description ?? frame.description;
+    if (svg) {
+      svg.style.maxWidth = scrollable ? 'none' : '100%';
+      svg.setAttribute('aria-label', titleText || heading);
+      const svgDescription = svg.querySelector(':scope > desc');
+      if (svgDescription) {
+        svgDescription.textContent = options.accessibility?.description ?? frame.description;
+        if (svgDescription.textContent) svg.setAttribute('aria-describedby', svgDescription.id);
+        else svg.removeAttribute('aria-describedby');
+      }
+    }
     overlay(); domContent?.clear(['legend']);legend.replaceChildren();
     if(destroyed)return;
     if (options.legend?.visible !== false) (options.legend?.reverse?[...frame.legend].reverse():frame.legend).forEach(item => {
